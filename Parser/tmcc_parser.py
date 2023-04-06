@@ -1,23 +1,24 @@
+from __future__ import annotations
 import enum
-import tmcc_token as tk
-import tmcc_lexer as lx
+import Parser.tmcc_token as tk
+import Parser.tmcc_lexer as lx
 
 
 class NodeKind(enum.Enum):
-    BinaryOperator = enum.Enum()
-    VariableDeclaration = enum.Enum()
-    FunctionDeclaration = enum.Enum()
-    VariableInitialization = enum.Enum()
-    FunctionInitialization = enum.Enum()
-    Block = enum.Enum()
+    BinaryOperator = enum.auto()
+    VariableDeclaration = enum.auto()
+    FunctionDeclaration = enum.auto()
+    VariableInitialization = enum.auto()
+    FunctionInitialization = enum.auto()
+    Block = enum.auto()
 
 
 class BinaryOperatorKind(enum.Enum):
-    Assignment = enum.Enum()
-    Addition = enum.Enum()
-    Subtraction = enum.Enum()
-    Multiplication = enum.Enum()
-    Division = enum.Enum()
+    Assignment = enum.auto()
+    Addition = enum.auto()
+    Subtraction = enum.auto()
+    Multiplication = enum.auto()
+    Division = enum.auto()
 
 
 class Integer:
@@ -56,7 +57,7 @@ class Function:
 
     def __str__(self):
         str_ = f"[func: {self.name}, return_type: {self.return_type}"
-        for argument in range(self.arguments):
+        for argument in range(len(self.arguments)):
             str_ += f", {argument}"
         str_ += "]"
         return str_
@@ -91,6 +92,7 @@ class VariableInitialisation:
     def __str__(self):
         return f"[var: {str(self.var)}, value: {str(self.value)}]"
 
+
 class FunctionDeclaration:
 
     def __init__(self, func: Function):
@@ -107,7 +109,28 @@ class FunctionInitialisation:
         self.block = block
 
     def __str__(self):
-        return f"[func: {str(self.var)}, block: {str(self.block)}]"
+        return f"[func: {str(self.func_dec)}, block: {str(self.block)}]"
+
+class Block:
+
+    def __init__(self, statements: list):
+        self.statements = statements
+
+    def __str__(self):
+        str_ = "["
+        if len(self.statements) == 0:
+            return str_ + "]"
+        elif len(self.statements) == 1:
+            str_ += str(self.statements[0]) + "]"
+            return str_
+
+        for statement in self.statements:
+            str_ += str(statement) + ", "
+
+        str_ = str_[0: -2]
+        str_ += "]"
+
+        return str_
 
 
 class parser:
@@ -116,26 +139,27 @@ class parser:
         self.tokens_length: int = len(self.tokens)
         self.lexer: lx.lexer = lexer
         self.index: int = 0  # The current index of the parser in the token.
-        self.abstract_syntax_tree = []
+        self.abstract_syntax_tree = None
 
     def peek_token(self, offset: int) -> tk.Token:
         return self.tokens[self.index + offset]
+
     def peek_expression_node(self):
         pass
 
     def peek_variable_declaration_node(self) -> VariableDeclaration:
         if self.peek_token(0) not in [tk.TokenKind.Int, tk.TokenKind.Float]:
-            SyntaxError("Type is needed")
+            raise SyntaxError("Type is needed")
         vtype: tk.Token = self.peek_token(0)
         if self.peek_token(1) != tk.TokenKind.Identifier:
-            SyntaxError("Identifier is needed")
+            raise SyntaxError("Identifier is needed")
         vname: tk.Token = self.peek_token(1)
 
         self.index += 2
 
         return VariableDeclaration(Variable(self.lexer.get_token_string(vname), self.lexer.get_token_string(vtype)))
 
-    def peek_variable_initialization_node(self) -> VariableInitialisation:
+    """def peek_variable_initialization_node(self) -> VariableInitialisation:
         var_dec: VariableDeclaration = self.peek_variable_declaration_node()
 
         if self.peek_token(0) != tk.TokenKind.Equal:
@@ -143,57 +167,56 @@ class parser:
 
         self.index += 1  # move from the "=" token
 
-        return VariableInitialisation(var_dec, self.peek_expression_node())
+        return VariableInitialisation(var_dec, self.peek_expression_node())"""
 
-    def peek_function_declaration_node(self):
-        if self.peek_token(0) not in [tk.TokenKind.Int, tk.TokenKind.Float]:
-            SyntaxError("Type is needed")
-        return_type: tk.Token = self.peek_token(0)
-        if self.peek_token(1) != tk.TokenKind.Identifier:
-            SyntaxError("Identifier is needed")
-        function_name: tk.Token = self.peek_token(1)
+    def peek_block(self) -> Block:
+        statements = []
+        while self.peek_token(0).kind != tk.TokenKind.CloseBrace:
+            statements.append(self.peek_statement())
 
-        if self.peek_token(2) != tk.TokenKind.OpenParenthesis:
-            SyntaxError("Open Parenthesis sign is needed")
+        if self.peek_token(0).kind != tk.TokenKind.CloseBrace:
+            raise SyntaxError("A closing brace is needed")
 
-        self.index += 3  # move the index to the token after the (
+        self.index += 1  # the index to the token after the } token
 
-        if self.peek_token(0).kind != tk.TokenKind.CloseParenthesis:  # no arguments
-            return FunctionDeclaration(Function(self.lexer.get_token_string(function_name), self.lexer.get_token_string(return_type)), [])
+        return Block(statements)
 
-        arguments = [self.peek_variable_declaration_node()]
-
-        while self.peek_token(0).kind == tk.TokenKind.Comma or self.peek_token(0).kind != tk.TokenKind.CloseParenthesis:
-            arguments.append(self.peek_variable_declaration_node())
-
-        return FunctionDeclaration(Function(self.lexer.get_token_string(function_name), self.lexer.get_token_string(return_type)), arguments)
-
-    def peek_function_initialization_node(self):
+    def peek_function_declaration_or_initialization_node(self) -> FunctionDeclaration:
         return_type: tk.Token = self.peek_token(0)
         function_name: tk.Token = self.peek_token(1)
 
         self.index += 3  # move the index to the token after the (
 
-        arguments = [self.peek_variable_initialization_node()]
+        parameters: list[Variable] = []
 
-        if self.peek_token(0).kind != tk.TokenKind.CloseParenthesis:  # no arguments
-            return Fu
+        while not (self.peek_token(0).kind == tk.TokenKind.CloseParenthesis or self.peek_token(0).kind == tk.TokenKind.EndOfTokens):  # peek the parameters decelerations up to the ) token or EndOfTokens
+            parameters.append(self.peek_variable_declaration_node().var)
 
-        while self.peek_token(0).kind != tk.TokenKind.Comma or self.peek_token(0).kind != tk.TokenKind.CloseParenthesis:
-            arguments.append(self.peek_variable_initialization_node())
+        if self.peek_token(0).kind != tk.TokenKind.CloseParenthesis:
+            raise SyntaxError("A closing parenthesis is needed")
 
-    def peek_node(self):
+        self.index += 1  # move over the ) token
+
+        if self.peek_token(0).kind == tk.TokenKind.Semicolon:
+            self.index += 1
+            return FunctionDeclaration(Function(self.lexer.get_token_string(function_name), self.lexer.get_token_string(return_type), parameters))
+        elif self.peek_token(0).kind == tk.TokenKind.OpenBrace:
+            return FunctionInitialisation(Function(self.lexer.get_token_string(function_name), self.lexer.get_token_string(return_type), parameters), self.peek_block())
+        else:
+            raise SyntaxError("Wrong token")
+
+    def peek_statement(self) -> FunctionDeclaration:
         if self.peek_token(0).kind in [tk.TokenKind.Int, tk.TokenKind.Float]:  # have to be an initialization of something
             if self.peek_token(1).kind != tk.TokenKind.Identifier:
-                SyntaxError("An identifier is needed")
-
+                raise SyntaxError("An identifier is needed")
             if self.peek_token(2).kind == tk.TokenKind.OpenParenthesis:  # a function initialization
-                self.peek_function_initialization_node()
-            elif self.peek_token(2).kind in tk.TokenKind.Equal:  # a variable initialization
-                pass
+                return self.peek_function_declaration_or_initialization_node()
+            elif self.peek_token(2).kind == tk.TokenKind.Equal:  # a variable initialization
+                assert False, "not implemented"
         else:
             self.index += 1
 
     def parse(self) -> None:
         while self.index < self.tokens_length:
-            self.abstract_syntax_tree.append(self.peek_node())
+            statement_ = self.peek_statement()
+            self.abstract_syntax_tree.append(statement_)

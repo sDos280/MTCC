@@ -14,4 +14,4 @@ if __name__ == '__main__':
 
     parser.parse()
 
-    print(parser.abstract_syntax_tree)
+    [print(i) for i in parser.abstract_syntax_tree]

@@ -76,7 +76,8 @@ string_to_operator: dict[str, TokenKind] = {
 
 
 class Token:
-    def __init__(self, kind: TokenKind, start: int, length: int):
+    def __init__(self, kind: TokenKind, start: int, length: int, string: str):
         self.kind: TokenKind = kind
         self.start: int = start  # the start char index
         self.length: int = length  # the length of chars of the token in the file
+        self.string: str = string  # the string of the token in the file (for debugging)

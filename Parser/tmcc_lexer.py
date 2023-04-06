@@ -16,27 +16,36 @@ class lexer:
     def char(self):  # for debugging
         return self.file_string[self.index]
 
-    def get_token_string(self, token: tk.Token):
+    def get_string_from_source(self, start: int, length: int):
+        return self.file_string[start: start + length]
+
+    def get_token_string_with_kind(self, token: tk.Token):
         return self.file_string[token.start: token.start + token.length] + " " + str(token.kind)
 
     def peek_char(self, offset: int) -> str:
         return self.file_string[self.index + offset]
 
     def peek_oneline_comment(self) -> tk.Token:
-        token = tk.Token(tk.TokenKind.SingleLineComment, self.index, 2)
+        token = tk.Token(tk.TokenKind.SingleLineComment, self.index, 2, "")
 
-        while self.index < self.file_string_length and self.peek_char(0) not in ['\r', '\n']:  # will not keep the '\r' | '\n' char
+        while self.index < self.file_string_length and self.peek_char(0) not in ['\r',
+                                                                                 '\n']:  # will not keep the '\r' | '\n' char
             self.index += 1
             token.length += 1
+
+        token.string = self.get_string_from_source(token.start, token.length)
 
         return token
 
     def peek_block_comment(self) -> tk.Token:
-        token = tk.Token(tk.TokenKind.BlockComment, self.index, 2)
+        token = tk.Token(tk.TokenKind.BlockComment, self.index, 2, "")
 
-        while self.index < self.file_string_length and not (self.peek_char(-2) == '*' and self.peek_char(-1) == '/'):  # will keep the "*/"
+        while self.index < self.file_string_length and not (
+                self.peek_char(-2) == '*' and self.peek_char(-1) == '/'):  # will keep the "*/"
             self.index += 1
             token.length += 1
+
+        token.string = self.get_string_from_source(token.start, token.length)
 
         return token
 
@@ -55,9 +64,11 @@ class lexer:
             length_ += 1
 
         if dot_count == 1:
-            token = tk.Token(tk.TokenKind.FloatLiteral, self_index_copy, length_)
+            token = tk.Token(tk.TokenKind.FloatLiteral, self_index_copy, length_,
+                             self.get_string_from_source(self_index_copy, length_))
         else:
-            token = tk.Token(tk.TokenKind.IntegerLiteral, self_index_copy, length_)
+            token = tk.Token(tk.TokenKind.IntegerLiteral, self_index_copy, length_,
+                             self.get_string_from_source(self_index_copy, length_))
 
         return token
 
@@ -72,9 +83,11 @@ class lexer:
         token_string = self.file_string[self_index_copy: self_index_copy + length_]
 
         if token_string in tk.string_to_keyword.keys():
-            token = tk.Token(tk.string_to_keyword[token_string], self_index_copy, length_)
+            token = tk.Token(tk.string_to_keyword[token_string], self_index_copy, length_,
+                             self.get_string_from_source(self_index_copy, length_))
         else:  # identifier
-            token = tk.Token(tk.TokenKind.Identifier, self_index_copy, length_)
+            token = tk.Token(tk.TokenKind.Identifier, self_index_copy, length_,
+                             self.get_string_from_source(self_index_copy, length_))
 
         return token
 
@@ -93,9 +106,11 @@ class lexer:
         token_string = self.file_string[self_index_copy: self_index_copy + length_]
 
         if token_string in tk.string_to_separator.keys():
-            token = tk.Token(tk.string_to_separator[token_string], self_index_copy, length_)
+            token = tk.Token(tk.string_to_separator[token_string], self_index_copy, length_,
+                             self.get_string_from_source(self_index_copy, length_))
         elif token_string in tk.string_to_operator.keys():  # operator
-            token = tk.Token(tk.string_to_operator[token_string], self_index_copy, length_)
+            token = tk.Token(tk.string_to_operator[token_string], self_index_copy, length_,
+                             self.get_string_from_source(self_index_copy, length_))
         else:
             raise SyntaxError("Invalid operator / seperator")
 
@@ -127,4 +142,4 @@ class lexer:
         while self.index < self.file_string_length:
             self.peek_token()
 
-        self.tokens.append(tk.Token(tk.TokenKind.EndOfTokens, self.file_string_length - 1, 1))
+        self.tokens.append(tk.Token(tk.TokenKind.EndOfTokens, self.file_string_length - 1, 1, '\0'))

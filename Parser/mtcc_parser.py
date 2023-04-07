@@ -1,16 +1,8 @@
 from __future__ import annotations
+from typing import Union
 import enum
-import Parser.tmcc_token as tk
-import Parser.tmcc_lexer as lx
-
-
-class NodeKind(enum.Enum):
-    BinaryOperator = enum.auto()
-    VariableDeclaration = enum.auto()
-    FunctionDeclaration = enum.auto()
-    VariableInitialization = enum.auto()
-    FunctionInitialization = enum.auto()
-    Block = enum.auto()
+import Parser.mtcc_token as tk
+import Parser.mtcc_lexer as lx
 
 
 class BinaryOperatorKind(enum.Enum):
@@ -21,29 +13,41 @@ class BinaryOperatorKind(enum.Enum):
     Division = enum.auto()
 
 
-class Integer:
+class BaseTypeKind(enum.Enum):
+    Integer = enum.auto()
+    Float = enum.auto()
+    Array = enum.auto()
+    Pointer = enum.auto()
+    Struct = enum.auto()
 
-    def __init__(self, value: int):
-        self.value: int = value
+
+class Type:
+    def __init__(self, base_type_kind: BaseTypeKind, base_type: Type | str | None):
+        self.base_type_kind: BaseTypeKind = base_type_kind
+        self.base_type: Type | str = base_type  # str for struct (the name of the struct) and None for Integer/Float
 
     def __str__(self):
-        return str(self.value)
+        str_ = ""
+        match self.base_type_kind:
+            case BaseTypeKind.Integer:
+                str_ = "int"
+            case BaseTypeKind.Float:
+                str_ = "float"
+            case BaseTypeKind.Array:
+                str_ = f"array: {self.base_type}"
+            case BaseTypeKind.Pointer:
+                str_ = f"pointer: {self.base_type}"
+            case BaseTypeKind.Struct:
+                str_ = f"struct: {self.base_type}"
 
-
-class Float:
-
-    def __init__(self, value: float):
-        self.value: float = value
-
-    def __str__(self):
-        return str(self.value)
+        return str_
 
 
 class Variable:
 
-    def __init__(self, name: str, vtype: str):
+    def __init__(self, name: str, vtype: Type):
         self.name: str = name
-        self.type: str = vtype
+        self.type: Type = vtype
 
     def __str__(self):
         return f"[name: {self.name}, type: {self.type}]"
@@ -71,7 +75,10 @@ class Operator:
         self.right_operand = right_operand
 
     def __str__(self):
-        return f"[operation: {str(self.operation)}, left: {str(self.left_operand)}, right: {str(self.right_operand)}]"
+        return f"[operation: {self.operation}, left: {self.left_operand}, right: {self.right_operand}]"
+
+
+mtcc_exception = Union[Variable, Operator]
 
 
 class VariableDeclaration:
@@ -80,17 +87,17 @@ class VariableDeclaration:
         self.var: Variable = var
 
     def __str__(self):
-        return f"[var: {str(self.var)}]"
+        return f"[var: {self.var}]"
 
 
 class VariableInitialisation:
 
-    def __init__(self, var_dec: VariableDeclaration, value):
-        self.var_dec: VariableDeclaration = var_dec
+    def __init__(self, var: Variable, value):
+        self.var: Variable = var
         self.value = value
 
     def __str__(self):
-        return f"[var_init: {str(self.var_dec.var)}, value: {str(self.value)}]"
+        return f"[var_init: {self.var}, value: {self.value}]"
 
 
 class FunctionDeclaration:
@@ -113,13 +120,14 @@ class FunctionInitialisation:
         self.block = block
 
     def __str__(self):
-        return f"[func_init: {str(self.func_dec)}, block: {str(self.block)}]"
+        return f"[func_init: {self.func_dec}, block: {self.block}]"
 
 
 class Block:
 
     def __init__(self, statements: list):
         self.statements = statements
+        self.local_variables: list[Variable] = []
 
     def __str__(self):
         str_ = "["
@@ -138,7 +146,7 @@ class Block:
         return str_
 
 
-class parser:
+class Parser:
     def __init__(self, tokens: list[tk.Token], lexer: lx.lexer):
         self.tokens: list[tk.Token] = tokens
         self.tokens_length: int = len(self.tokens)
@@ -149,13 +157,24 @@ class parser:
     def peek_token(self, offset: int) -> tk.Token:
         return self.tokens[self.index + offset]
 
+    def peek_type(self) -> Type:
+        # for now, we just peek the first token and from that get the type
+
+        if self.peek_token(0).kind == tk.TokenKind.Int:
+            return Type(BaseTypeKind.Integer, None)
+
+        if self.peek_token(0).kind == tk.TokenKind.Int:
+            return Type(BaseTypeKind.Integer, None)
+
+        assert False, "type not implemented"
+
     def peek_expression_node(self):
         pass
 
     def peek_variable_declaration_node(self) -> VariableDeclaration:
         if self.peek_token(0) not in [tk.TokenKind.Int, tk.TokenKind.Float]:
             raise SyntaxError("Type is needed")
-        vtype: tk.Token = self.peek_token(0)
+        vtype: Type = self.peek_type()
         if self.peek_token(1) != tk.TokenKind.Identifier:
             raise SyntaxError("Identifier is needed")
         vname: tk.Token = self.peek_token(1)
@@ -163,7 +182,7 @@ class parser:
         self.index += 2
 
         return VariableDeclaration(
-            Variable(vname.string, vtype.string))
+            Variable(vname.string, vtype))
 
     """def peek_variable_initialization_node(self) -> VariableInitialisation:
         var_dec: VariableDeclaration = self.peek_variable_declaration_node()

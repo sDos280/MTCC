@@ -1,4 +1,4 @@
-import Parser.tmcc_token as tk
+import Parser.mtcc_token as tk
 
 
 class lexer:

@@ -1,6 +1,6 @@
 
-int main();
+int main(int i, int k, int s);
 
-int main() {
+int main(float kk) {
     int i;
 }

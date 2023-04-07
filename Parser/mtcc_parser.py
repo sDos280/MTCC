@@ -61,7 +61,7 @@ class Function:
 
     def __str__(self):
         str_ = f"[func: {self.name}, return_type: {self.return_type}"
-        for argument in range(len(self.arguments)):
+        for argument in self.arguments:
             str_ += f", {argument}"
         str_ += "]"
         return str_
@@ -107,7 +107,7 @@ class FunctionDeclaration:
 
     def __str__(self):
         str_ = f"[func_dec: {self.func.name}, return_type: {self.func.return_type}"
-        for argument in range(len(self.func.arguments)):
+        for argument in self.func.arguments:
             str_ += f", {argument}"
         str_ += "]"
         return str_
@@ -157,6 +157,10 @@ class Parser:
     def peek_token(self, offset: int) -> tk.Token:
         return self.tokens[self.index + offset]
 
+    @property
+    def current_token(self):  # for debugging
+        return self.peek_token(0).string
+
     def bump(self, by: int) -> None:
         self.index += by
 
@@ -192,8 +196,6 @@ class Parser:
         vtype: Type = self.peek_type()
         vname: tk.Token = self.peek_identifier()
 
-        self.bump(1)
-
         return VariableDeclaration(
             Variable(vname.string, vtype))
 
@@ -228,10 +230,14 @@ class Parser:
 
         parameters: list[Variable] = []
 
-        while not (self.peek_token(0).kind == tk.TokenKind.CloseParenthesis or
-                   self.peek_token(
-                       0).kind == tk.TokenKind.EndOfTokens):  # peek the parameters decelerations up to the ) token or EndOfTokens
+        while self.index < self.tokens_length and \
+                not (self.peek_token(0).kind == tk.TokenKind.EndOfTokens
+                     or self.peek_token(0).kind == tk.TokenKind.CloseParenthesis):
             parameters.append(self.peek_variable_declaration().var)
+            if self.peek_token(0).kind == tk.TokenKind.Comma:
+                self.bump(1)
+            elif self.peek_token(0).kind == tk.TokenKind.CloseBrace:
+                raise SyntaxError("An comma separator is needed")
 
         if self.peek_token(0).kind != tk.TokenKind.CloseParenthesis:
             raise SyntaxError("A closing parenthesis is needed")

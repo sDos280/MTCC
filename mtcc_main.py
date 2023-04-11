@@ -3,8 +3,6 @@ import Parser.mtcc_lexer
 import Parser.mtcc_parser
 import pathlib
 
-def main():
-    print("fgsdfgsdfg")
 
 if __name__ == '__main__':
     lexer = Parser.mtcc_lexer.lexer(pathlib.Path(sys.argv[0]).parent / sys.argv[1])

@@ -225,5 +225,3 @@ class Parser:
 
             if statement is not None:
                 self.AST.append(statement)
-
-        print("sdgdfgfdg")

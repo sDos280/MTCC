@@ -1,7 +1,7 @@
 import Parser.mtcc_token as tk
 
 
-class lexer:
+class Lexer:
     def __init__(self, main_file_path: str) -> None:
         main_file = open(main_file_path)
         self.file_string: str = main_file.read()
@@ -15,6 +15,34 @@ class lexer:
     @property
     def char(self):  # for debugging
         return self.file_string[self.index]
+
+    def get_token_line(self, token: tk.Token) -> int:
+        index_ = 0
+        line_counter = 1
+
+        while index_ < self.file_string_length and index_ < token.start:
+            if self.file_string[index_] == '\n':
+                line_counter += 1
+
+            index_ += 1
+
+        return line_counter
+
+    def get_line_string(self, line: int) -> str:
+        index_ = 0
+        line_counter = 1
+        str_ = ""
+
+        while index_ < self.file_string_length and line_counter <= line:
+            if self.file_string[index_] == '\n':
+                line_counter += 1
+
+            if line_counter == line and self.file_string[index_] != '\n':
+                str_ += self.file_string[index_]
+
+            index_ += 1  # we need to move over the \n first
+
+        return str_
 
     def get_string_from_source(self, start: int, length: int):
         return self.file_string[start: start + length]

@@ -9,6 +9,7 @@ class TokenKind(enum.Enum):
     BlockComment = enum.auto()  # /* ... */
 
     # Keywords
+    Typedef = enum.auto()
     Enum = enum.auto()  # enum
     For = enum.auto()  # for
     While = enum.auto()  # while
@@ -46,6 +47,7 @@ class TokenKind(enum.Enum):
 # string to keyword dictionary
 string_to_keyword: dict[str, TokenKind] = {
     # the token hierarchy is by string len
+    "typedef": TokenKind.Typedef,
     "while": TokenKind.While,
     "float": TokenKind.Float,
     "enum": TokenKind.Enum,

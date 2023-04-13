@@ -15,6 +15,7 @@ class TokenKind(enum.Enum):
     While = enum.auto()  # while
     If = enum.auto()  # if
     # Keywords for types
+    Const = enum.auto()
     Int = enum.auto()  # int
     Float = enum.auto()  # float
 
@@ -48,6 +49,7 @@ class TokenKind(enum.Enum):
 string_to_keyword: dict[str, TokenKind] = {
     # the token hierarchy is by string len
     "typedef": TokenKind.Typedef,
+    "const": TokenKind.Const,
     "while": TokenKind.While,
     "float": TokenKind.Float,
     "enum": TokenKind.Enum,

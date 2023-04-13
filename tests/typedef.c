@@ -1,12 +1,4 @@
-typedef enum {
-    MONDAY,
-    TUESDAY,
-    WEDNESDAY,
-    THURSDAY,
-    FRIDAY,
-    SATURDAY,
-    SUNDAY
-} Weekday;
+typedef const int*** const Weekday;
 
 int main()
 {

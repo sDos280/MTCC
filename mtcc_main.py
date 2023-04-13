@@ -12,4 +12,4 @@ if __name__ == '__main__':
 
     parser.parse()
 
-    [print(i) for i in parser.enums]
+    [print(i) for i in parser.typedefs]

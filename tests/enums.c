@@ -7,3 +7,8 @@ enum week {
     SATURDAY,
     SUNDAY
 };
+
+int main()
+{
+
+}

@@ -44,6 +44,25 @@ class Lexer:
 
         return str_
 
+    def get_token_position_in_line(self, token: tk.Token):
+        token_line: int = self.get_token_line(token)
+        line_position = 0
+        token_in_line_position = 0
+        index_ = 0
+        line_counter = 1
+
+        while index_ < self.file_string_length and index_ < token.start:
+            if self.file_string[index_] == '\n':
+                line_counter += 1
+                line_position = index_ + 1  # the \n char doesn't include in the line
+
+            if line_counter == token_line and index_ <= token.start:
+                token_in_line_position += 1
+
+            index_ += 1
+
+        return token_in_line_position
+
     def get_string_from_source(self, start: int, length: int):
         return self.file_string[start: start + length]
 

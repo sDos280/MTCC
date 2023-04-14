@@ -3,6 +3,7 @@ from __future__ import annotations
 import enum
 
 import Parser.mtcc_token as tk
+import Parser.mtcc_error_handler as eh
 from typing import Union
 
 
@@ -106,9 +107,10 @@ Statement = Union[Block, EnumTypeDec]
 
 
 class Parser:
-    def __init__(self, tokens: list[tk.Token]):
+    def __init__(self, tokens: list[tk.Token], error_handler: eh.ErrorHandler):
         self.tokens: list[tk.Token] = tokens
         self.current_token: tk.Token = None
+        self.error_handler: eh.ErrorHandler = error_handler
         self.index: int = -1
         self.AST: list[Statement] = []
 
@@ -157,11 +159,21 @@ class Parser:
         self.index -= 1
         self.current_token = self.tokens[self.index]
 
+    def expect_token(self, expected_token: tk.TokenKind, expected_token_string: str, error_string: str):
+        if self.current_token.kind != expected_token:
+            self.drop_token()  # we drop a token to get the before token
+            self.error_handler.expect_token_syntax_error(self.current_token, expected_token_string, error_string)
+
+    def dont_expect_token(self, expected_token: tk.TokenKind, expected_token_string: str, error_string: str):
+        if self.current_token.kind == expected_token:
+            self.drop_token()  # we drop a token to get the before token
+            self.error_handler.expect_token_syntax_error(self.current_token, expected_token_string, error_string)
+
+
     def peek_pointer_type_attributes(self) -> PointerType:
         pointer_level: int = 0
 
-        if self.current_token.kind != tk.TokenKind.Asterisk:
-            raise SyntaxError("An asterisk is needed")
+        self.expect_token(tk.TokenKind.Asterisk, '*', "An asterisk is needed")
 
         self.peek_token()  # peek the asterisk token
 
@@ -214,8 +226,7 @@ class Parser:
     def peek_enum_declaration_member(self, enum_dec: EnumTypeDec) -> EnumMember:
         member: EnumMember = EnumMember("", enum_dec.current_member_value)
 
-        if self.current_token.kind != tk.TokenKind.Identifier:
-            raise SyntaxError("An enum member name is needed")
+        self.expect_token(tk.TokenKind.Identifier, '', "An enum member name is needed")
 
         if self.is_enum_member_name_declared(self.current_token.string):
             raise SyntaxError("The name of enum member is already taken")
@@ -227,8 +238,7 @@ class Parser:
         if self.current_token.kind == tk.TokenKind.Equal:
             self.peek_token()  # peek equal sign token
 
-            if self.current_token.kind != tk.TokenKind.IntegerLiteral:
-                raise SyntaxError("An integer literal is needed")
+            self.expect_token(tk.TokenKind.IntegerLiteral, '', "An integer literal is needed")
 
             member.value = int(self.current_token.string)
             enum_dec.current_member_value = int(self.current_token.string)
@@ -242,14 +252,12 @@ class Parser:
     def peek_enum_declaration_block(self, enum_dec: EnumTypeDec) -> list[EnumMember]:
         members: list[EnumMember] = []
 
-        if self.current_token.kind != tk.TokenKind.OpenBrace:
-            raise SyntaxError("An enum block opener is needed: \'{\'")
+        self.expect_token(tk.TokenKind.OpenBrace, '{', "An enum block opener is needed: \'{\'")
 
         self.peek_token()  # peek the { token
 
         while self.current_token.kind != tk.TokenKind.CloseBrace:
-            if self.current_token.kind == tk.TokenKind.EndOfTokens:
-                raise SyntaxError("An enum block closer is needed: \'}\'")
+            self.dont_expect_token(tk.TokenKind.EndOfTokens, '}', "An enum block closer is needed")
 
             member: EnumMember = self.peek_enum_declaration_member(enum_dec)
 
@@ -286,22 +294,20 @@ class Parser:
         if self.current_token.kind == tk.TokenKind.OpenBrace:
             enum_dec.members = self.peek_enum_declaration_block(enum_dec)
         else:
-            raise SyntaxError("An enum block opener is needed: \'{\'")
+            self.expect_token(tk.TokenKind.OpenBrace, '{', "An enum block opener is needed")
 
         self.peek_token()  # peek the } token
 
         return enum_dec
 
     def peek_typedef_declaration(self) -> TypedefDec:
-        if self.current_token.kind != tk.TokenKind.Typedef:
-            raise SyntaxError("A typedef keyword is needed")
+        self.expect_token(tk.TokenKind.Typedef, "typedef", "A typedef keyword is needed")
 
         self.peek_token()  # peek the typedef token
 
         type: BaseType = self.peek_type()
 
-        if self.current_token.kind != tk.TokenKind.Identifier:
-            raise SyntaxError("An identifier is needed")
+        self.expect_token(tk.TokenKind.Identifier, '', "An identifier is needed")
 
         if self.is_typedef_name_declared(self.current_token.string):
             raise SyntaxError("The typedef name is already declared")
@@ -329,13 +335,11 @@ class Parser:
             if self.current_token.kind == tk.TokenKind.Enum:
                 enum: EnumTypeDec = self.peek_enum_declaration()
                 self.enums.append(enum)
-                if self.current_token.kind != tk.TokenKind.Semicolon:
-                    raise SyntaxError("A semicolon is needed")
+                self.expect_token(tk.TokenKind.Semicolon, ';', "A semicolon is needed")
             elif self.current_token.kind == tk.TokenKind.Typedef:
                 typedef: TypedefDec = self.peek_typedef_declaration()
                 self.typedefs.append(typedef)
-                if self.current_token.kind != tk.TokenKind.Semicolon:
-                    raise SyntaxError("A semicolon is needed")
+                self.expect_token(tk.TokenKind.Semicolon, ';', "A semicolon is needed")
             else:
                 self.peek_token()
 

@@ -176,7 +176,7 @@ string_to_separator_or_operator: dict[str, TokenKind] = {
     '<': TokenKind.LESS_THAN,
     '>': TokenKind.GREATER_THAN,
     '^': TokenKind.CIRCUMFLEX,
-    '|': TokenKind.VERTICAL_BAR,
+    '|': TokenKind.VERTICAL_BAR
 }
 
 

@@ -46,11 +46,14 @@ class Lexer:
                     str_ += self.current_char
                     self.peek_char()  # peek * char
 
-                    if self.is_char('/'):
-                        str_ += self.current_char
-                        self.peek_char()  # peek / char
+                    if not self.is_char(END_OF_FILE):
+                        if self.is_char('/'):
+                            str_ += self.current_char
+                            self.peek_char()  # peek / char
 
-                        break
+                            break
+                    else:
+                        raise SyntaxError(f"An block comment ender in needed, file index: {self.index}")
 
                 str_ += self.current_char
                 self.peek_char()  # peek comment char
@@ -79,8 +82,9 @@ class Lexer:
             self.peek_char()
 
         # we peek one too much char
-        self.drop_char()
-        str_ = str_[0:-1]
+        if self.index != len(self.file_string) - 1:  # we need to drop only if we aren't on the last char (not including \0)
+            self.drop_char()
+            str_ = str_[0:-1]
 
         return tk.Token(tk.string_to_separator_or_operator[str_], index_, str_)
 

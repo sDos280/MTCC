@@ -94,7 +94,7 @@ class TokenKind(enum.Enum):
     CIRCUMFLEX = enum.auto()  # ^
     VERTICAL_BAR = enum.auto()  # |
 
-    EndOfTokens = enum.auto()  # End Of Tokens stream token
+    END = enum.auto()  # End Of Tokens stream token
 
 
 # string to keyword dictionary
@@ -181,7 +181,7 @@ string_to_separator_or_operator: dict[str, TokenKind] = {
 
 
 class Token:
-    def __init__(self, kind: TokenKind, start: int, length: int, string: str):
+    def __init__(self, kind: TokenKind, start: int, string: str):
         self.kind: TokenKind = kind
         self.start: int = start  # the start char index
         self.string: str = string  # the string of the token in the file (for debugging)

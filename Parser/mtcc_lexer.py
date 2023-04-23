@@ -25,8 +25,48 @@ class Lexer:
     def is_char(self, string: str) -> bool:
         return self.current_char in string
 
+    def is_char_whitespace(self) -> bool:
+        return self.current_char in "\n\t\r\0 "
+
     def is_char_operator_or_separator(self) -> bool:
         return self.is_char("+-*/%&|^~<>!=?:,.;{}[]()")
+
+    def peek_comment(self):
+        index_: int = self.index
+        str_: str = self.current_char
+
+        self.peek_char()  # peek first char
+
+        if self.is_char('*'):  # a block comment
+            str_ += self.current_char
+            self.peek_char()  # peek * char
+
+            while not self.is_char(END_OF_FILE):
+                if self.is_char('*'):  # check for block comment end
+                    str_ += self.current_char
+                    self.peek_char()  # peek * char
+
+                    if self.is_char('/'):
+                        str_ += self.current_char
+                        self.peek_char()  # peek / char
+
+                        break
+
+                str_ += self.current_char
+                self.peek_char()  # peek comment char
+
+        else:  # a one line comment
+            while not self.is_char(END_OF_FILE):
+                if self.is_char('\n'):  # check for comment end
+                    str_ += self.current_char
+                    self.peek_char()  # peek \n char
+
+                    break
+
+                str_ += self.current_char
+                self.peek_char()  # peek comment char
+
+        return tk.Token(tk.TokenKind.COMMENT, index_, str_)
 
     def peek_operator_or_separator(self) -> tk.Token:
         index_: int = self.index
@@ -48,7 +88,12 @@ class Lexer:
         self.peek_char()  # initiate the current char
 
         while not self.is_char(END_OF_FILE):
-            if self.is_char_operator_or_separator():
+            if self.is_char_whitespace():
+                self.peek_char()
+            elif self.is_char('/'):
+                token: tk.Token = self.peek_comment()
+                self.tokens.append(token)
+            elif self.is_char_operator_or_separator():
                 token: tk.Token = self.peek_operator_or_separator()
                 self.tokens.append(token)
             else:

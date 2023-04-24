@@ -28,6 +28,9 @@ class Lexer:
     def is_char_whitespace(self) -> bool:
         return self.current_char in "\n\t\r\0 "
 
+    def is_char_numeric(self) -> bool:
+        return self.current_char.isnumeric()
+
     def is_char_operator_or_separator(self) -> bool:
         return self.is_char("+-*/%&|^~<>!=?:,.;{}[]()")
 
@@ -71,18 +74,40 @@ class Lexer:
 
         return tk.Token(tk.TokenKind.COMMENT, index_, str_)
 
+    def peek_number(self):
+        index_: int = self.index
+        dot_count: int = 0
+        str_: str = self.current_char
+
+        self.peek_char()  # peek first char
+
+        while not self.is_char(END_OF_FILE) and (self.is_char_numeric() or self.is_char('.')):
+            if self.is_char('.'):
+                dot_count += 1
+
+            if dot_count == 2:
+                break
+
+            str_ += self.current_char
+            self.peek_char()  # peek numeric/dot char
+
+        if dot_count == 0:  # An integer
+            return tk.Token(tk.TokenKind.INTEGER_LITERAL, index_, str_)
+        else:
+            return tk.Token(tk.TokenKind.FLOAT_LITERAL, index_, str_)
+
     def peek_operator_or_separator(self) -> tk.Token:
         index_: int = self.index
         str_: str = self.current_char
 
         self.peek_char()  # peek first char
 
-        while not self.is_char(END_OF_FILE) and str_ in tk.string_to_separator_or_operator.keys():
+        while not self.is_char(END_OF_FILE) and str_ in tk.string_to_separator_or_operator.keys() and self.is_char_operator_or_separator():
             str_ += self.current_char
             self.peek_char()
 
         # we peek one too much char
-        if self.index != len(self.file_string) - 1:  # we need to drop only if we aren't on the last char (not including \0)
+        if self.index != len(self.file_string) - 1 and len(str_) > 1:  # we need to drop only if we aren't on the last char (not including \0)
             self.drop_char()
             str_ = str_[0:-1]
 
@@ -96,6 +121,9 @@ class Lexer:
                 self.peek_char()
             elif self.is_char('/'):
                 token: tk.Token = self.peek_comment()
+                self.tokens.append(token)
+            elif self.is_char_numeric():
+                token: tk.Token = self.peek_number()
                 self.tokens.append(token)
             elif self.is_char_operator_or_separator():
                 token: tk.Token = self.peek_operator_or_separator()

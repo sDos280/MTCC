@@ -31,6 +31,12 @@ class Lexer:
     def is_char_numeric(self) -> bool:
         return self.current_char.isnumeric()
 
+    def is_char_identifier_starter(self) -> bool:
+        return self.current_char.isalpha() or self.is_char('_')
+
+    def is_char_identifier(self) -> bool:
+        return self.current_char.isalnum() or self.is_char('_')
+
     def is_char_operator_or_separator(self) -> bool:
         return self.is_char("+-*/%&|^~<>!=?:,.;{}[]()")
 
@@ -95,6 +101,21 @@ class Lexer:
             return tk.Token(tk.TokenKind.INTEGER_LITERAL, index_, str_)
         else:
             return tk.Token(tk.TokenKind.FLOAT_LITERAL, index_, str_)
+
+    def peek_identifier(self):
+        index_: int = self.index
+        str_: str = self.current_char
+
+        self.peek_char()  # peek first char
+
+        while not self.is_char(END_OF_FILE):
+            if not self.is_char_identifier():
+                break
+
+            str_ += self.current_char
+            self.peek_char()  # peek identifier char
+
+        return tk.Token(tk.TokenKind.Identifier, index_, str_)
 
     def peek_string_literal(self):
         index_: int = self.index
@@ -217,6 +238,12 @@ class Lexer:
                 self.tokens.append(token)
             elif self.is_char_numeric():
                 token: tk.Token = self.peek_number()
+                self.tokens.append(token)
+            elif self.is_char_identifier_starter():
+                token: tk.Token = self.peek_identifier()
+                if token.string in tk.string_to_keyword.keys():
+                    keyword_kind: tk.TokenKind = tk.string_to_keyword[token.string]
+                    token.kind = keyword_kind
                 self.tokens.append(token)
             elif self.is_char('\'\"'):
                 token: tk.Token = self.peek_string_literal()

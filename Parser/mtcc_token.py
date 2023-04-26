@@ -92,6 +92,7 @@ class TokenKind(enum.Enum):
     LESS_THAN = enum.auto()  # <
     GREATER_THAN = enum.auto()  # >
     CIRCUMFLEX = enum.auto()  # ^
+    QUESTION_MARK = enum.auto()  # ?
     VERTICAL_BAR = enum.auto()  # |
 
     END = enum.auto()  # End Of Tokens stream token
@@ -177,6 +178,7 @@ string_to_separator_or_operator: dict[str, TokenKind] = {
     '<': TokenKind.LESS_THAN,
     '>': TokenKind.GREATER_THAN,
     '^': TokenKind.CIRCUMFLEX,
+    '?': TokenKind.QUESTION_MARK,
     '|': TokenKind.VERTICAL_BAR
 }
 

@@ -517,6 +517,27 @@ class Parser:
             else:
                 return shift_expression
 
+    def peek_equality_expression(self) -> Node:
+        relational_expression: Node = self.peek_relational_expression()
+
+        while True:
+            if self.is_token_kind(tk.TokenKind.EQ_OP):
+                self.peek_token()  # peek the == token
+
+                sub_relational_expression: Node = self.peek_relational_expression()
+
+                relational_expression = CBinaryOp(CBinaryOpKind.EqualTo, relational_expression, sub_relational_expression)
+
+            elif self.is_token_kind(tk.TokenKind.NE_OP):
+                self.peek_token()  # peek the != token
+
+                sub_relational_expression: Node = self.peek_relational_expression()
+
+                relational_expression = CBinaryOp(CBinaryOpKind.NotEqualTo, relational_expression, sub_relational_expression)
+
+            else:
+                return relational_expression
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 

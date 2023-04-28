@@ -357,11 +357,51 @@ class Parser:
     def peek_argument_expression_list(self) -> Node:
         assert False, "Not implemented"
 
-    def unary_expression(self) -> Node:
+    def peek_unary_expression(self) -> Node:
         if self.is_token_kind(tk.TokenKind.INC_OP):
             assert False, "Not implemented"
         elif self.is_token_kind(tk.TokenKind.DEC_OP):
             assert False, "Not implemented"
+        elif self.is_token_kind(tk.TokenKind.AMPERSAND):
+            self.peek_token()  # peek & token
+
+            cast_expression: Node = self.peek_cast_expression()
+
+            return CUnaryOp(CUnaryOpKind.Reference, cast_expression)
+        elif self.is_token_kind(tk.TokenKind.ASTERISK):
+            self.peek_token()  # peek * token
+
+            cast_expression: Node = self.peek_cast_expression()
+
+            return CUnaryOp(CUnaryOpKind.Dereference, cast_expression)
+        elif self.is_token_kind(tk.TokenKind.PLUS):
+            self.peek_token()  # peek * token
+
+            cast_expression: Node = self.peek_cast_expression()
+
+            return CUnaryOp(CUnaryOpKind.Plus, cast_expression)
+        elif self.is_token_kind(tk.TokenKind.HYPHEN):
+            self.peek_token()  # peek - token
+
+            cast_expression: Node = self.peek_cast_expression()
+
+            return CUnaryOp(CUnaryOpKind.Minus, cast_expression)
+        elif self.is_token_kind(tk.TokenKind.TILDE):
+            self.peek_token()  # peek - token
+
+            cast_expression: Node = self.peek_cast_expression()
+
+            return CUnaryOp(CUnaryOpKind.BitwiseNOT, cast_expression)
+        elif self.is_token_kind(tk.TokenKind.EXCLAMATION):
+            self.peek_token()  # peek - token
+
+            cast_expression: Node = self.peek_cast_expression()
+
+            return CUnaryOp(CUnaryOpKind.LogicalNOT, cast_expression)
+
+        postfix_expression: Node = self.peek_postfix_expression()
+
+        return postfix_expression
 
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")

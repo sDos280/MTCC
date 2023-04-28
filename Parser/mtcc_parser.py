@@ -461,6 +461,27 @@ class Parser:
             else:
                 return multiplicative_expression
 
+    def peek_shift_expression(self) -> Node:
+        additive_expression: Node = self.peek_additive_expression()
+
+        while True:
+            if self.is_token_kind(tk.TokenKind.LEFT_OP):
+                self.peek_token()  # peek the << token
+
+                sub_additive_expression: Node = self.peek_additive_expression()
+
+                additive_expression = CBinaryOp(CBinaryOpKind.LeftShift, additive_expression, sub_additive_expression)
+
+            elif self.is_token_kind(tk.TokenKind.RIGHT_OP):
+                self.peek_token()  # peek the >> token
+
+                sub_additive_expression: Node = self.peek_additive_expression()
+
+                additive_expression = CBinaryOp(CBinaryOpKind.RightShift, additive_expression, sub_additive_expression)
+
+            else:
+                return additive_expression
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 

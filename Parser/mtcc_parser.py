@@ -289,7 +289,7 @@ class Parser:
         self.current_token = self.tokens[self.index]
 
     def is_token_kind(self, kind: tk.TokenKind) -> bool:
-        return self.current_self.is_token_kind(kind
+        return self.current_token.kind == kind
 
     def expect_token_kind(self, kind: tk.TokenKind, error_string) -> None:
         assert False, "Not implemented"
@@ -312,7 +312,7 @@ class Parser:
             self.peek_token()  # peek integer literal number
             return number
         elif self.is_token_kind(tk.TokenKind.FLOAT_LITERAL):
-            number: Number = Number(int(self.current_token.string))
+            number: Number = Number(float(self.current_token.string))
             self.peek_token()  # peek float literal number
             return number
         elif self.is_token_kind(tk.TokenKind.STRING_LITERAL):
@@ -678,6 +678,25 @@ class Parser:
         else:
             raise Exception("Invalid assignment operator token")
 
+    def peek_expression(self) -> Node | list[Node]:
+        assignment_expressions: list[Node] = []
+        assignment_expression: Node = self.peek_assignment_expression()
+
+        if self.is_token_kind(tk.TokenKind.COMMA):
+            assignment_expressions.append(assignment_expression)
+
+        while self.is_token_kind(tk.TokenKind.COMMA):
+            self.peek_token()  # peek the , token
+
+            sub_assignment_expression: Node = self.peek_assignment_expression()
+
+            assignment_expressions.append(sub_assignment_expression)
+
+        if len(assignment_expressions) != 0:
+            return assignment_expressions
+        else:
+            return assignment_expression
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 
@@ -755,7 +774,10 @@ class Parser:
     def parse(self) -> None:
         self.peek_token()
 
-        while not (self.current_token is None or self.is_token_kind(tk.TokenKind.END)):
+        expression = self.peek_expression()
+
+        print(expression)
+        """while not (self.current_token is None or self.is_token_kind(tk.TokenKind.END)):
             statement = None
 
             if self.is_token_kind(tk.TokenKind.ENUM):
@@ -763,5 +785,5 @@ class Parser:
                 self.enums.append(enum)
                 self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed")
             else:
-                self.peek_token()
+                self.peek_token()"""
 

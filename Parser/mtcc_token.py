@@ -53,6 +53,7 @@ class TokenKind(enum.Enum):
     RIGHT_ASSIGN = enum.auto()  # >>=
     LEFT_ASSIGN = enum.auto()  # <<=
     ADD_ASSIGN = enum.auto()  # +=
+    AND_ASSIGN = enum.auto()  # &=
     SUB_ASSIGN = enum.auto()  # -=
     MUL_ASSIGN = enum.auto()  # *=
     DIV_ASSIGN = enum.auto()  # /=
@@ -138,6 +139,7 @@ string_to_separator_or_operator: dict[str, TokenKind] = {
     '...': TokenKind.ELLIPSIS,
     '>>=': TokenKind.RIGHT_ASSIGN,
     '<<=': TokenKind.LEFT_ASSIGN,
+    '&=': TokenKind.AND_ASSIGN,
     '+=': TokenKind.ADD_ASSIGN,
     '-=': TokenKind.SUB_ASSIGN,
     '*=': TokenKind.MUL_ASSIGN,

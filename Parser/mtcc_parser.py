@@ -482,6 +482,41 @@ class Parser:
             else:
                 return additive_expression
 
+    def peek_relational_expression(self) -> Node:
+        shift_expression: Node = self.peek_shift_expression()
+
+        while True:
+            if self.is_token_kind(tk.TokenKind.LESS_THAN):
+                self.peek_token()  # peek the < token
+
+                sub_shift_expression: Node = self.peek_shift_expression()
+
+                shift_expression = CBinaryOp(CBinaryOpKind.LessThan, shift_expression, sub_shift_expression)
+
+            elif self.is_token_kind(tk.TokenKind.GREATER_THAN):
+                self.peek_token()  # peek the > token
+
+                sub_shift_expression: Node = self.peek_shift_expression()
+
+                shift_expression = CBinaryOp(CBinaryOpKind.GreaterThan, shift_expression, sub_shift_expression)
+
+            elif self.is_token_kind(tk.TokenKind.LE_OP):
+                self.peek_token()  # peek the <= token
+
+                sub_shift_expression: Node = self.peek_shift_expression()
+
+                shift_expression = CBinaryOp(CBinaryOpKind.LessThanOrEqualTo, shift_expression, sub_shift_expression)
+
+            elif self.is_token_kind(tk.TokenKind.GE_OP):
+                self.peek_token()  # peek the >= token
+
+                sub_shift_expression: Node = self.peek_shift_expression()
+
+                shift_expression = CBinaryOp(CBinaryOpKind.GreaterThanOrEqualTo, shift_expression, sub_shift_expression)
+
+            else:
+                return shift_expression
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 

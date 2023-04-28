@@ -1,63 +1,159 @@
 from __future__ import annotations
 
-from typing import Union, Type, List
-from enum import Enum
+from typing import Union
+import enum
 
 import Parser.mtcc_token as tk
 
 
-class CLogicalOrExpression:
-    def __init__(self, expression_left, expression_right):
-        self.expression_left = expression_left
-        self.expression_right = expression_right
+class CBinaryOpKind(enum.Enum):
+    Addition = enum.auto()
+    Subtraction = enum.auto()
+    Multiplication = enum.auto()
+    Division = enum.auto()
+    Modulus = enum.auto()
+    Assignment = enum.auto()
+    EqualTo = enum.auto()
+    NotEqualTo = enum.auto()
+    GreaterThan = enum.auto()
+    LessThan = enum.auto()
+    GreaterThanOrEqualTo = enum.auto()
+    LessThanOrEqualTo = enum.auto()
+    BitwiseAND = enum.auto()
+    BitwiseOR = enum.auto()
+    BitwiseXOR = enum.auto()
+    LeftShift = enum.auto()
+    RightShift = enum.auto()
+    LogicalAND = enum.auto()
+    LogicalOR = enum.auto()
+
+
+class CBinaryOp:
+    def __init__(self, kind: CBinaryOpKind, left: Node, right: Node):
+        self.kind: CBinaryOpKind = kind
+        self.left: Node = left
+        self.right: Node = right
 
     def __str__(self):
-        return f"{self.expression_left} || {self.expression_right}"
+        str_: str = "("
+        str_ += str(self.left)
+
+        match self.kind:
+            case CBinaryOpKind.Addition:
+                str_ += ' + '
+            case CBinaryOpKind.Subtraction:
+                str_ += ' - '
+            case CBinaryOpKind.Multiplication:
+                str_ += ' * '
+            case CBinaryOpKind.Division:
+                str_ += ' / '
+            case CBinaryOpKind.Modulus:
+                str_ += ' % '
+            case CBinaryOpKind.Assignment:
+                str_ += ' = '
+            case CBinaryOpKind.EqualTo:
+                str_ += ' == '
+            case CBinaryOpKind.NotEqualTo:
+                str_ += ' != '
+            case CBinaryOpKind.GreaterThan:
+                str_ += ' > '
+            case CBinaryOpKind.LessThan:
+                str_ += ' < '
+            case CBinaryOpKind.GreaterThanOrEqualTo:
+                str_ += ' >= '
+            case CBinaryOpKind.LessThanOrEqualTo:
+                str_ += ' <= '
+            case CBinaryOpKind.BitwiseAND:
+                str_ += ' & '
+            case CBinaryOpKind.BitwiseOR:
+                str_ += ' | '
+            case CBinaryOpKind.BitwiseXOR:
+                str_ += ' ^ '
+            case CBinaryOpKind.LeftShift:
+                str_ += ' << '
+            case CBinaryOpKind.RightShift:
+                str_ += ' >> '
+            case CBinaryOpKind.LogicalAND:
+                str_ += ' && '
+            case CBinaryOpKind.LogicalOR:
+                str_ += ' || '
+
+        str_ += str(self.right)
+        str_ += ')'
+
+        return str_
+
+
+class CUnaryOpKind(enum.Enum):
+    """"""
+    """
+        # https://www.scaler.com/topics/pre-increment-and-post-increment-in-c/
+        # increase/increase then return
+        PreIncrease = enum.auto()
+        PreDecrease = enum.auto()
+        # return then increase/increase
+        PostIncrease = enum.auto()
+        PostDecrease = enum.auto()
+    """
+    Reference = enum.auto()  # '&'
+    Dereference = enum.auto()  # '*'
+    Plus = enum.auto()  # '+'
+    Minus = enum.auto()  # '-'
+    BitwiseNOT = enum.auto()  # '~'
+    LogicalNOT = enum.auto()  # '!'
+
+
+class CUnaryOp:
+    def __init__(self, kind: CUnaryOpKind, expression: Node):
+        self.kind: CUnaryOpKind = kind
+        self.expression: Node = expression
+
+    def __str__(self):
+        str_: str = "("
+
+        """         
+        case CUnaryOpKind.PreIncrease:
+                        str_ += '++'
+                        str_ += str(self.expression)
+                    case CUnaryOpKind.PreDecrease:
+                        str_ += '--'
+                        str_ += str(self.expression)
+                    case CUnaryOpKind.PostIncrease:
+                        str_ += str(self.expression)
+                        str_ += '++'
+                    case CUnaryOpKind.PostDecrease:
+                        str_ += str(self.expression)
+                        str_ += '--'
+                        """
+
+        match self.kind:
+            case CUnaryOpKind.Reference:
+                str_ += '&'
+            case CUnaryOpKind.Dereference:
+                str_ += '*'
+            case CUnaryOpKind.Plus:
+                str_ += '+'
+            case CUnaryOpKind.Minus:
+                str_ += '-'
+            case CUnaryOpKind.BitwiseNOT:
+                str_ += '~'
+            case CUnaryOpKind.LogicalNOT:
+                str_ += '!'
+
+        str_ += str(self.expression)
+        str_ += ')'
+
+        return str_
 
 
 class CConditionalExpression:
-    def __init__(self, condition, true_value, false_value):
-        self.condition = condition
-        self.true_value = true_value
-        self.false_value = false_value
+    def __init__(self, condition: Node, true_value: Node, false_value: Node):
+        self.condition: Node = condition
+        self.true_value: Node = true_value
+        self.false_value: Node = false_value
 
     def __str__(self):
         return f"{self.condition} ? {self.true_value} : {self.false_value}"
-
-
-class CBasicType(Enum):
-    CHAR = 'char'
-    SIGNED_CHAR = 'signed char'
-    UNSIGNED_CHAR = 'unsigned char'
-    SHORT = 'short'
-    UNSIGNED_SHORT = 'unsigned short'
-    INT = 'int'
-    UNSIGNED_INT = 'unsigned int'
-    LONG = 'long'
-    UNSIGNED_LONG = 'unsigned long'
-    LONG_LONG = 'long long'
-    UNSIGNED_LONG_LONG = 'unsigned long long'
-    FLOAT = 'float'
-    DOUBLE = 'double'
-    LONG_DOUBLE = 'long double'
-
-
-class TypeQualifier(Enum):
-    CONST = 'const'
-    VOLATILE = 'volatile'
-    RESTRICT = 'restrict'
-
-
-class CQualifiedType:
-    def __init__(self, base_type: CBasicType, qualifiers: list[TypeQualifier]):
-        self.base_type = base_type
-        self.qualifiers = qualifiers
-
-    def __str__(self) -> str:
-        base_str = self.base_type.value
-        qual_str = " ".join(q.value for q in self.qualifiers)
-
-        return f"{qual_str} {base_str}"
 
 
 class CEnumMember:
@@ -70,9 +166,9 @@ class CEnumMember:
 
 
 class CEnum:
-    def __init__(self, name: str, members: List[CEnumMember]):
+    def __init__(self, name: str, members: list[CEnumMember]):
         self.name: str = name
-        self.members: List[CEnumMember] = members
+        self.members: list[CEnumMember] = members
         self.current_member_value: int = 0
 
     def __str__(self):
@@ -81,9 +177,36 @@ class CEnum:
         return f"enum {self.name} {{\n{members_str}\n}}"
 
 
+class Number:
+
+    def __init__(self, value: int | float):
+        self.value: int | float = value
+
+    def __str__(self):
+        return str(self.value)
+
+
+class String:
+    """String Literal"""
+
+    def __init__(self, contain: str):
+        self.contain: str = contain
+
+    def __str__(self):
+        return self.contain
+
+
+class Identifier:
+    def __init__(self, name: str):
+        self.name: str = name
+
+    def __str__(self):
+        return self.name
+
+
 class Variable:
-    def __init__(self, name, type):
-        self.name = name
+    def __init__(self, name: str, type):
+        self.name: str = name
         self.type = type
 
     def __str__(self):
@@ -92,26 +215,60 @@ class Variable:
 
 class Block:
     def __init__(self):
-        self.statements = []
-
-    def add_statement(self, statement):
-        self.statements.append(statement)
+        self.statements: list[Node] = []
+        self.variables: list[Variable] = []  # variables declension list
 
     def __str__(self):
-        return "{" + "\n".join(str(s) for s in self.statements) + "}"
+        return "{" + ";".join(str(s) for s in self.statements) + "}"
 
 
-Node = Union[Block, Variable, CEnum, CEnumMember, CQualifiedType, CConditionalExpression]
+class Function:
+    def __init__(self, name: str, parameters_type: list):
+        self.name: str = name
+        self.parameters_type: list = parameters_type
+
+    def __str__(self):
+        str_ = f"{self.name}("
+        for parameter in self.parameters_type:
+            str_ += f"{parameter}, "
+
+        str_ = str_[0:-2]
+        str_ += ")"
+
+        return str_
+
+
+class FunctionCall:
+    def __init__(self, function: Function, parameters_type: list):
+        self.function: Function = function
+        self.parameters_type: list = parameters_type
+
+    def __str__(self):
+        str_ = f"{self.function.name}("
+        for parameter in self.parameters_type:
+            str_ += f"{parameter}, "
+
+        str_ = str_[0:-2]
+        str_ += ")"
+
+        return str_
+
+
+Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CConditionalExpression, CBinaryOp, CUnaryOp, FunctionCall, Function]
 
 
 class Parser:
     def __init__(self, tokens: list[tk.Token]):
         self.tokens: list[tk.Token] = tokens
-        self.current_token: tk.Token = None
+        self.current_token: tk.Token | None = None
         self.index: int = -1
-        self.AST: list = []
+
+        self.current_block: Block | None = None
 
         self.enums: list[CEnum] = []
+        self.variables: list[Variable] = []  # variables declension list
+        self.function_declension: list[Function] = []
+        self.function: list[Function]  # functions ast code
 
     def peek_token(self) -> None:  # increase the index and update the current token
         self.index += 1
@@ -121,51 +278,90 @@ class Parser:
         self.index -= 1
         self.current_token = self.tokens[self.index]
 
-    def is_variable_in_block(self):
-        pass
+    def is_token_kind(self, kind: tk.TokenKind) -> bool:
+        return self.current_token.kind == kind
 
-    def expect_token_kind(self, token_kind: tk.TokenKind, error: str) -> None:
-        if self.current_token.kind != token_kind:
-            raise SyntaxError(error)
+    def expect_token_kind(self, kind: tk.TokenKind, error_string) -> None:
+        assert False, "Not implemented"
 
-    def dont_expect_token_kind(self, token_kind: tk.TokenKind, error: str) -> None:
-        if self.current_token.kind == token_kind:
-            raise SyntaxError(error)
+    def is_variable_in_block(self, variable: Variable) -> bool:
+        if self.current_block is None:  # we are on the top level block
+            for var in self.variables:
+                if variable.name == var.name:
+                    return True
+        else:
+            for var in self.current_block.variables:
+                if variable.name == var.name:
+                    return True
 
-    def is_token_kind(self, token_kind: tk.TokenKind) -> bool:
-        return self.current_token.kind == token_kind
+        return False
 
-    def peek_logical_or_expression(self):
-        logical_and_expression = self.peek_logical_and_expression()
+    def peek_primary_expression(self) -> Node:
+        if self.is_token_kind(tk.TokenKind.INTEGER_LITERAL):
+            number: Number = Number(int(self.current_token.string))
+            self.peek_token()  # peek integer literal number
+            return number
+        elif self.is_token_kind(tk.TokenKind.FLOAT_LITERAL):
+            number: Number = Number(int(self.current_token.string))
+            self.peek_token()  # peek float literal number
+            return number
+        elif self.is_token_kind(tk.TokenKind.STRING_LITERAL):
+            string_: String = String(self.current_token.string)
+            self.peek_token()  # peek string literal number
+            return string_
+        elif self.is_token_kind(tk.TokenKind.Identifier):
+            assert False, "Not implemented, need to add variable exist check"
+            identifier: Identifier = Identifier(self.current_token.string)
+            self.peek_token()  # peek identifier literal number
+            return identifier
+        elif self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
+            self.peek_token()  # peek opening curly brace token
 
-        if self.is_token_kind(tk.TokenKind.OR_OP):
-            self.peek_token()  # peek the or operator token
+            expression: Node = self.peek_expression()
 
-            logical_and_expression = self.peek_logical_and_expression()
+            self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "Expecting a closing curly brace")
 
-        return logical_and_expression
+            self.peek_token()  # peek closing curly brace token
 
-    def peek_conditional_expression(self):
-        logical_or_expression = self.peek_logical_or_expression()
+            return expression
+        else:
+            raise SyntaxError("Expected an primary expression token")
 
-        if self.is_token_kind(tk.TokenKind.QUESTION_MARK):
-            self.peek_token()  # peek question mark token
+    def peek_postfix_expression(self) -> Node:
+        primary_expression: Node = self.peek_primary_expression()
 
-            expression = self.peek_expression()
+        if not isinstance(primary_expression, Identifier):
+            return primary_expression
 
-            self.expect_token_kind(tk.TokenKind.COLON, 'Expecting a colon')
+        if self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
+            assert False, "Not implemented"
 
-            self.peek_token()  # peek colon token
+        elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            assert False, "Not implemented"
 
-            conditional_expression = self.peek_conditional_expression()
+        elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            assert False, "Not implemented"
 
-            return CConditionalExpression(logical_or_expression, expression, conditional_expression)
+        elif self.is_token_kind(tk.TokenKind.PTR_OP):
+            assert False, "Not implemented"
 
-        return logical_or_expression
+        elif self.is_token_kind(tk.TokenKind.INC_OP):
+            assert False, "Not implemented"
 
-    def peek_constant_expression(self):
-        node = self.peek_conditional_expression()
-        return node
+        elif self.is_token_kind(tk.TokenKind.DEC_OP):
+            assert False, "Not implemented"
+
+        else:
+            raise SyntaxError("Expected an postfix expression token")
+
+    def peek_argument_expression_list(self) -> Node:
+        assert False, "Not implemented"
+
+    def unary_expression(self) -> Node:
+        if self.is_token_kind(tk.TokenKind.INC_OP):
+            assert False, "Not implemented"
+        elif self.is_token_kind(tk.TokenKind.DEC_OP):
+            assert False, "Not implemented"
 
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
@@ -225,7 +421,7 @@ class Parser:
         members: list[CEnumMember] = []
 
         if self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
-            self.peek_token()  # open the opening curly brace token
+            self.peek_token()  # peek the opening curly brace token
 
             members = self.peek_enumerator_list(enum)
 
@@ -248,7 +444,7 @@ class Parser:
             statement = None
 
             if self.current_token.kind == tk.TokenKind.ENUM:
-                enum = self.peek_enum_specifier()
+                enum: CEnum = self.peek_enum_specifier()
                 self.enums.append(enum)
                 self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed")
             else:

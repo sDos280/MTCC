@@ -26,6 +26,16 @@ class CBinaryOpKind(enum.Enum):
     RightShift = enum.auto()
     LogicalAND = enum.auto()
     LogicalOR = enum.auto()
+    MultiplicationAssignment = enum.auto()
+    DivisionAssignment = enum.auto()
+    ModulusAssignment = enum.auto()
+    AdditionAssignment = enum.auto()
+    SubtractionAssignment = enum.auto()
+    LeftShiftAssignment = enum.auto()
+    RightShiftAssignment = enum.auto()
+    BitwiseAndAssignment = enum.auto()
+    BitwiseXorAssignment = enum.auto()
+    BitwiseOrAssignment = enum.auto()
 
 
 class CBinaryOp:
@@ -279,7 +289,7 @@ class Parser:
         self.current_token = self.tokens[self.index]
 
     def is_token_kind(self, kind: tk.TokenKind) -> bool:
-        return self.current_token.kind == kind
+        return self.current_self.is_token_kind(kind
 
     def expect_token_kind(self, kind: tk.TokenKind, error_string) -> None:
         assert False, "Not implemented"
@@ -609,11 +619,64 @@ class Parser:
 
             self.expect_token_kind(tk.TokenKind.COLON, "Expected ':' in conditional expression")
 
+            self.peek_token()  # peek the : token 
+
             conditional_expression: Node = self.peek_conditional_expression()
 
             return CTernaryOp(logical_or_expression, expression, conditional_expression)
 
         return logical_or_expression
+
+    def peek_assignment_expression(self) -> Node:
+        conditional_expression: Node = self.peek_conditional_expression()
+
+        if self.is_assignment_operator():
+            self.peek_token()  # peek assignment operator token
+
+            sub_assignment_expression: Node = self.peek_assignment_expression()
+
+            return CBinaryOp(self.get_binary_assignment_op_kind_(), conditional_expression, sub_assignment_expression)
+        else:
+            return conditional_expression
+
+    def is_assignment_operator(self) -> bool:
+        return self.is_token_kind(tk.TokenKind.EQUALS) or \
+               self.is_token_kind(tk.TokenKind.MUL_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.DIV_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.MOD_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.ADD_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.SUB_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.LEFT_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.RIGHT_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.AND_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.XOR_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.OR_ASSIGN)
+
+    def get_binary_assignment_op_kind_(self) -> CBinaryOpKind:
+        if self.is_token_kind(tk.TokenKind.EQUALS):
+            return CBinaryOpKind.Assignment
+        elif self.is_token_kind(tk.TokenKind.MUL_ASSIGN):
+            return CBinaryOpKind.MultiplicationAssignment
+        elif self.is_token_kind(tk.TokenKind.DIV_ASSIGN):
+            return CBinaryOpKind.DivisionAssignment
+        elif self.is_token_kind(tk.TokenKind.MOD_ASSIGN):
+            return CBinaryOpKind.ModulusAssignment
+        elif self.is_token_kind(tk.TokenKind.ADD_ASSIGN):
+            return CBinaryOpKind.AdditionAssignment
+        elif self.is_token_kind(tk.TokenKind.SUB_ASSIGN):
+            return CBinaryOpKind.SubtractionAssignment
+        elif self.is_token_kind(tk.TokenKind.LEFT_ASSIGN):
+            return CBinaryOpKind.LeftShiftAssignment
+        elif self.is_token_kind(tk.TokenKind.RIGHT_ASSIGN):
+            return CBinaryOpKind.RightShiftAssignment
+        elif self.is_token_kind(tk.TokenKind.AND_ASSIGN):
+            return CBinaryOpKind.BitwiseAndAssignment
+        elif self.is_token_kind(tk.TokenKind.XOR_ASSIGN):
+            return CBinaryOpKind.BitwiseXorAssignment
+        elif self.is_token_kind(tk.TokenKind.OR_ASSIGN):
+            return CBinaryOpKind.BitwiseOrAssignment
+        else:
+            raise Exception("Invalid assignment operator token")
 
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
@@ -692,15 +755,13 @@ class Parser:
     def parse(self) -> None:
         self.peek_token()
 
-        while not (self.current_token is None or self.current_token.kind == tk.TokenKind.END):
+        while not (self.current_token is None or self.is_token_kind(tk.TokenKind.END)):
             statement = None
 
-            if self.current_token.kind == tk.TokenKind.ENUM:
+            if self.is_token_kind(tk.TokenKind.ENUM):
                 enum: CEnum = self.peek_enum_specifier()
                 self.enums.append(enum)
                 self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed")
             else:
                 self.peek_token()
 
-            if statement is not None:
-                self.AST.append(statement)

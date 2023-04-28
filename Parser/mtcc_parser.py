@@ -538,6 +538,19 @@ class Parser:
             else:
                 return relational_expression
 
+    def peek_and_expression(self) -> Node:
+        equality_expression: Node = self.peek_equality_expression()
+
+        while self.is_token_kind(tk.TokenKind.AMPERSAND):
+            self.peek_token()  # peek the & token
+
+            sub_equality_expression: Node = self.peek_equality_expression()
+
+            equality_expression = CBinaryOp(CBinaryOpKind.BitwiseAND, equality_expression, sub_equality_expression)
+
+        return equality_expression
+
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 

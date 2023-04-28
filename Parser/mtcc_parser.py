@@ -574,6 +574,19 @@ class Parser:
 
         return exclusive_or_expression
 
+    def peek_logical_and_expression(self) -> Node:
+        inclusive_or_expression: Node = self.peek_inclusive_or_expression()
+
+        while True:
+            if self.is_token_kind(tk.TokenKind.AND_OP):
+                self.peek_token()  # peek the && token
+
+                sub_inclusive_or_expression: Node = self.peek_inclusive_or_expression()
+
+                inclusive_or_expression = CBinaryOp(CBinaryOpKind.LogicalAND, inclusive_or_expression, sub_inclusive_or_expression)
+            else:
+                return inclusive_or_expression
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 

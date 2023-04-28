@@ -400,12 +400,46 @@ class Parser:
             return CUnaryOp(CUnaryOpKind.LogicalNOT, cast_expression)
         elif self.is_token_kind(tk.TokenKind.SIZEOF):
             assert False, "Not implemented"
-        else:
-            raise SyntaxError("Expected an unary expression token")
 
         postfix_expression: Node = self.peek_postfix_expression()
 
         return postfix_expression
+
+    def peek_cast_expression(self):
+        if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            assert False, "Not implemented"
+
+        unary_expression: Node = self.peek_unary_expression()
+
+        return unary_expression
+
+    def peek_multiplicative_expression(self) -> Node:
+        cast_expression: Node = self.peek_cast_expression()
+
+        while True:
+            if self.is_token_kind(tk.TokenKind.ASTERISK):
+                self.peek_token()  # peek the * token
+
+                sub_peek_cast_expression: Node = self.peek_cast_expression()
+
+                cast_expression = CBinaryOp(CBinaryOpKind.Multiplication, cast_expression, sub_peek_cast_expression)
+
+            elif self.is_token_kind(tk.TokenKind.SLASH):
+                self.peek_token()  # peek the / token
+
+                sub_peek_cast_expression: Node = self.peek_cast_expression()
+
+                cast_expression = CBinaryOp(CBinaryOpKind.Division, cast_expression, sub_peek_cast_expression)
+
+            elif self.is_token_kind(tk.TokenKind.PERCENTAGE):
+                self.peek_token()  # peek the % token
+
+                sub_peek_cast_expression: Node = self.peek_cast_expression()
+
+                cast_expression = CBinaryOp(CBinaryOpKind.Modulus, cast_expression, sub_peek_cast_expression)
+
+            else:
+                return cast_expression
 
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")

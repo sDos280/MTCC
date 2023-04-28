@@ -146,7 +146,7 @@ class CUnaryOp:
         return str_
 
 
-class CConditionalExpression:
+class CTernaryOp:
     def __init__(self, condition: Node, true_value: Node, false_value: Node):
         self.condition: Node = condition
         self.true_value: Node = true_value
@@ -254,7 +254,7 @@ class FunctionCall:
         return str_
 
 
-Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CConditionalExpression, CBinaryOp, CUnaryOp, FunctionCall, Function]
+Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, FunctionCall, Function]
 
 
 class Parser:

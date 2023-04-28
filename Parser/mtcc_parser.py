@@ -599,6 +599,22 @@ class Parser:
 
         return logical_and_expression
 
+    def peek_conditional_expression(self) -> Node:
+        logical_or_expression: Node = self.peek_logical_or_expression()
+
+        if self.is_token_kind(tk.TokenKind.QUESTION_MARK):
+            self.peek_token()  # peek the ? token
+
+            expression: Node = self.peek_expression()
+
+            self.expect_token_kind(tk.TokenKind.COLON, "Expected ':' in conditional expression")
+
+            conditional_expression: Node = self.peek_conditional_expression()
+
+            return CTernaryOp(logical_or_expression, expression, conditional_expression)
+
+        return logical_or_expression
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 

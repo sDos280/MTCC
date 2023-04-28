@@ -550,6 +550,17 @@ class Parser:
 
         return equality_expression
 
+    def peek_exclusive_or_expression(self) -> Node:
+        and_expression: Node = self.peek_and_expression()
+
+        while self.is_token_kind(tk.TokenKind.CIRCUMFLEX):
+            self.peek_token()  # peek the ^ token
+
+            sub_and_expression: Node = self.peek_and_expression()
+
+            and_expression = CBinaryOp(CBinaryOpKind.BitwiseXOR, and_expression, sub_and_expression)
+
+        return and_expression
 
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")

@@ -325,7 +325,7 @@ class Parser:
 
             return expression
         else:
-            raise SyntaxError("Expected an primary expression token")
+            raise SyntaxError("Expected a primary expression token")
 
     def peek_postfix_expression(self) -> Node:
         primary_expression: Node = self.peek_primary_expression()
@@ -352,7 +352,7 @@ class Parser:
             assert False, "Not implemented"
 
         else:
-            raise SyntaxError("Expected an postfix expression token")
+            raise SyntaxError("Expected a postfix expression token")
 
     def peek_argument_expression_list(self) -> Node:
         assert False, "Not implemented"
@@ -398,6 +398,10 @@ class Parser:
             cast_expression: Node = self.peek_cast_expression()
 
             return CUnaryOp(CUnaryOpKind.LogicalNOT, cast_expression)
+        elif self.is_token_kind(tk.TokenKind.SIZEOF):
+            assert False, "Not implemented"
+        else:
+            raise SyntaxError("Expected an unary expression token")
 
         postfix_expression: Node = self.peek_postfix_expression()
 

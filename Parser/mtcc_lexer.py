@@ -233,9 +233,6 @@ class Lexer:
         while not self.is_char(END_OF_FILE):
             if self.is_char_whitespace():
                 self.peek_char()
-            elif self.is_char('/'):
-                token: tk.Token = self.peek_comment()
-                self.tokens.append(token)
             elif self.is_char_numeric():
                 token: tk.Token = self.peek_number()
                 self.tokens.append(token)
@@ -251,6 +248,9 @@ class Lexer:
             elif self.is_char_operator_or_separator():
                 token: tk.Token = self.peek_operator_or_separator()
                 self.tokens.append(token)
+            elif self.is_char('/'):
+                token: tk.Token = self.peek_comment()
+                # self.tokens.append(token)
             else:
                 self.peek_char()
 

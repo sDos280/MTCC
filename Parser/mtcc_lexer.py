@@ -12,7 +12,11 @@ class Lexer:
 
         self.index: int = -1
         self.current_char: str = None
+        self.current_line: int = 0  # the first line is 0
         self.tokens: list[tk.Token] = []
+
+    def bump_line(self):
+        self.current_line += 1
 
     def peek_char(self):
         self.index += 1
@@ -66,19 +70,21 @@ class Lexer:
 
                 str_ += self.current_char
                 self.peek_char()  # peek comment char
+                self.bump_line()
 
         else:  # a one line comment
             while not self.is_char(END_OF_FILE):
                 if self.is_char('\n'):  # check for comment end
                     str_ += self.current_char
                     self.peek_char()  # peek \n char
+                    self.bump_line()
 
                     break
 
                 str_ += self.current_char
                 self.peek_char()  # peek comment char
 
-        return tk.Token(tk.TokenKind.COMMENT, index_, str_)
+        return tk.Token(tk.TokenKind.COMMENT, index_, self.current_line - 1, str_)
 
     def peek_number(self):
         index_: int = self.index
@@ -98,9 +104,9 @@ class Lexer:
             self.peek_char()  # peek numeric/dot char
 
         if dot_count == 0:  # An integer
-            return tk.Token(tk.TokenKind.INTEGER_LITERAL, index_, str_)
+            return tk.Token(tk.TokenKind.INTEGER_LITERAL, index_, self.current_line, str_)
         else:
-            return tk.Token(tk.TokenKind.FLOAT_LITERAL, index_, str_)
+            return tk.Token(tk.TokenKind.FLOAT_LITERAL, index_, self.current_line, str_)
 
     def peek_identifier(self):
         index_: int = self.index
@@ -115,12 +121,13 @@ class Lexer:
             str_ += self.current_char
             self.peek_char()  # peek identifier char
 
-        return tk.Token(tk.TokenKind.Identifier, index_, str_)
+        return tk.Token(tk.TokenKind.Identifier, index_, self.current_line, str_)
 
     def peek_string_literal(self):
         index_: int = self.index
         str_: str = self.current_char
         opener: str = self.current_char
+        start_line: int = self.current_line
 
         self.peek_char()  # peek first char
 
@@ -205,10 +212,13 @@ class Lexer:
                     assert False, "Not implemented"
                 continue
 
+            if self.is_char('\n'):
+                self.bump_line()
+
             str_ += self.current_char
             self.peek_char()  # peek char
 
-        return tk.Token(tk.TokenKind.STRING_LITERAL, index_, str_)
+        return tk.Token(tk.TokenKind.STRING_LITERAL, index_, self.current_line if start_line == self.current_line else self.current_line - 1, str_)
 
     def peek_operator_or_separator(self) -> tk.Token:
         index_: int = self.index
@@ -225,12 +235,14 @@ class Lexer:
             self.drop_char()
             str_ = str_[0:-1]
 
-        return tk.Token(tk.string_to_separator_or_operator[str_], index_, str_)
+        return tk.Token(tk.string_to_separator_or_operator[str_], index_, self.current_line, str_)
 
     def lex(self):
         self.peek_char()  # initiate the current char
 
         while not self.is_char(END_OF_FILE):
+            if self.is_char('\n'):
+                self.bump_line()
             if self.is_char_whitespace():
                 self.peek_char()
             elif self.is_char_numeric():
@@ -254,4 +266,4 @@ class Lexer:
             else:
                 self.peek_char()
 
-        self.tokens.append(tk.Token(tk.TokenKind.END, len(self.file_string) - 1, '\0'))
+        self.tokens.append(tk.Token(tk.TokenKind.END, len(self.file_string) - 1, self.current_line, '\0'))

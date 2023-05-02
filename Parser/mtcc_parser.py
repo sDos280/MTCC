@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Union
 import enum
-
+import Parser.mtcc_error_handler as eh
 import Parser.mtcc_token as tk
 
 
@@ -268,10 +268,12 @@ Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CT
 
 
 class Parser:
-    def __init__(self, tokens: list[tk.Token]):
+    def __init__(self, tokens: list[tk.Token], source_string: str):
         self.tokens: list[tk.Token] = tokens
         self.current_token: tk.Token | None = None
         self.index: int = -1
+
+        self.source_string: str = source_string
 
         self.current_block: Block | None = None
 
@@ -288,11 +290,33 @@ class Parser:
         self.index -= 1
         self.current_token = self.tokens[self.index]
 
-    def is_token_kind(self, kind: tk.TokenKind) -> bool:
-        return self.current_token.kind == kind
+    def is_token_kind(self, kind: list[tk.TokenKind] | tk.TokenKind) -> bool:
+        if isinstance(kind, tk.TokenKind):
+            return self.current_token.kind == kind
+        else:
+            return self.current_token.kind in kind
 
-    def expect_token_kind(self, kind: tk.TokenKind, error_string) -> None:
-        assert False, "Not implemented"
+    def get_line_string(self, line: int) -> str:
+        lines: list[str] = self.source_string.split('\n')
+        if line <= len(lines):
+            return lines[line]
+        else:
+            return ""
+
+    def get_line_substring_at_index(self, index: int) -> str:
+        # find the beginning of the line containing the index
+        start_of_line = self.source_string.rfind('\n', 0, index) + 1 if '\n' in self.source_string[:index] else 0
+        return self.source_string[start_of_line:index]
+
+    def expect_token_kind(self, kind: tk.TokenKind, error_string: str) -> None:
+        if not self.is_token_kind(kind):
+            line_string: str = self.get_line_string(self.current_token.line)
+            sub_line_string: str = self.get_line_substring_at_index(self.current_token.start)  # the sub line right up to the token start
+            print(f"MTCC:{self.current_token.line + 1}:{len(sub_line_string)+1}: ", end='')
+            print(error_string)
+            print(f"    | {line_string}")
+            print(f"    | {len(sub_line_string) * ' '}^{(len(self.current_token.string) - 1) * '~'}")
+            exit(1)
 
     def is_variable_in_block(self, variable: Variable) -> bool:
         if self.current_block is None:  # we are on the top level block
@@ -324,18 +348,18 @@ class Parser:
             identifier: Identifier = Identifier(self.current_token.string)
             self.peek_token()  # peek identifier literal number
             return identifier
-        elif self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
-            self.peek_token()  # peek opening curly brace token
+        elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            self.peek_token()  # peek opening parenthesis token
 
             expression: Node = self.peek_expression()
 
-            self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "Expecting a closing curly brace")
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing curly brace")
 
-            self.peek_token()  # peek closing curly brace token
+            self.peek_token()  # peek closing parenthesis token
 
             return expression
         else:
-            raise SyntaxError("Expected a primary expression token")
+            raise eh.PrimaryExpressionNotFound("Expected a primary expression token")
 
     def peek_postfix_expression(self) -> Node:
         primary_expression: Node = self.peek_primary_expression()
@@ -416,10 +440,11 @@ class Parser:
         return postfix_expression
 
     def peek_cast_expression(self):
-        if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-            assert False, "Not implemented"
 
         unary_expression: Node = self.peek_unary_expression()
+
+        if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            assert False, "Not implemented"
 
         return unary_expression
 
@@ -786,4 +811,3 @@ class Parser:
                 self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed")
             else:
                 self.peek_token()"""
-

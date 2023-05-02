@@ -186,7 +186,8 @@ string_to_separator_or_operator: dict[str, TokenKind] = {
 
 
 class Token:
-    def __init__(self, kind: TokenKind, start: int, string: str):
+    def __init__(self, kind: TokenKind, start: int, line: int, string: str):
         self.kind: TokenKind = kind
         self.start: int = start  # the start char index
+        self.line: int = line
         self.string: str = string  # the string of the token in the file (for debugging)

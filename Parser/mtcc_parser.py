@@ -308,15 +308,15 @@ class Parser:
         start_of_line = self.source_string.rfind('\n', 0, index) + 1 if '\n' in self.source_string[:index] else 0
         return self.source_string[start_of_line:index]
 
-    def expect_token_kind(self, kind: tk.TokenKind, error_string: str) -> None:
+    def expect_token_kind(self, kind: tk.TokenKind, error_string: str, raise_exception) -> None:
         if not self.is_token_kind(kind):
             line_string: str = self.get_line_string(self.current_token.line)
             sub_line_string: str = self.get_line_substring_at_index(self.current_token.start)  # the sub line right up to the token start
-            print(f"MTCC:{self.current_token.line + 1}:{len(sub_line_string)+1}: ", end='')
-            print(error_string)
-            print(f"    | {line_string}")
-            print(f"    | {len(sub_line_string) * ' '}^{(len(self.current_token.string) - 1) * '~'}")
-            exit(1)
+            full_error_string: str = f"\nMTCC:{self.current_token.line + 1}:{len(sub_line_string)+1}: "
+            full_error_string += error_string + '\n'
+            full_error_string += f"    | {line_string}\n"
+            full_error_string += f"    | {len(sub_line_string) * ' '}^{(len(self.current_token.string) - 1) * '~'}"
+            raise raise_exception(full_error_string)
 
     def is_variable_in_block(self, variable: Variable) -> bool:
         if self.current_block is None:  # we are on the top level block
@@ -353,7 +353,7 @@ class Parser:
 
             expression: Node = self.peek_expression()
 
-            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing curly brace")
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing curly brace", eh.TokenExpected)
 
             self.peek_token()  # peek closing parenthesis token
 
@@ -642,7 +642,7 @@ class Parser:
 
             expression: Node = self.peek_expression()
 
-            self.expect_token_kind(tk.TokenKind.COLON, "Expected ':' in conditional expression")
+            self.expect_token_kind(tk.TokenKind.COLON, "Expected ':' in conditional expression", eh.TokenExpected)
 
             self.peek_token()  # peek the : token 
 

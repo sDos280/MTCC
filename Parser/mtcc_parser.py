@@ -34,6 +34,27 @@ class Parser:
         else:
             return self.current_token.kind in kind
 
+    def is_token_type_specifier(self) -> bool:
+        return self.is_token_kind(
+            [tk.TokenKind.VOID,
+             tk.TokenKind.CHAR,
+             tk.TokenKind.SHORT,
+             tk.TokenKind.INT,
+             tk.TokenKind.LONG,
+             tk.TokenKind.FLOAT,
+             tk.TokenKind.DOUBLE,
+             tk.TokenKind.SIGNED,
+             tk.TokenKind.UNSIGNED,
+             tk.TokenKind.STRUCT,
+             tk.TokenKind.UNION,
+             tk.TokenKind.ENUM,
+             tk.TokenKind.Identifier])
+
+    def is_token_type_qualifier(self) -> bool:
+        return self.is_token_kind(
+            [tk.TokenKind.CONST,
+             tk.TokenKind.VOLATILE])
+
     def get_line_string(self, line: int) -> str:
         lines: list[str] = self.source_string.split('\n')
         if line <= len(lines):
@@ -68,6 +89,13 @@ class Parser:
 
         return False
 
+    def peek_specifier_qualifier_list(self):
+
+    def peek_type_name(self):
+        specifier_qualifier_list: Node = self.peek_specifier_qualifier_list()
+
+        assert False, "Not implemented"
+
     def peek_primary_expression(self) -> Node:
         if self.is_token_kind(tk.TokenKind.INTEGER_LITERAL):
             number: Number = Number(int(self.current_token.string))
@@ -82,7 +110,6 @@ class Parser:
             self.peek_token()  # peek string literal number
             return string_
         elif self.is_token_kind(tk.TokenKind.Identifier):
-            assert False, "Not implemented, need to add variable exist check"
             identifier: Identifier = Identifier(self.current_token.string)
             self.peek_token()  # peek identifier literal number
             return identifier

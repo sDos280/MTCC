@@ -89,9 +89,15 @@ class Parser:
 
         return False
 
-    def peek_specifier_qualifier_list(self):
+    def peek_specifier_qualifier_list(self) -> Node:
+        if self.is_token_type_specifier():
 
-    def peek_type_name(self):
+        elif self.is_token_type_qualifier():
+
+        else:
+            raise eh.SpecifierQualifierListNotFound("Expected a primary expression token")
+
+    def peek_type_name(self) -> Node:
         specifier_qualifier_list: Node = self.peek_specifier_qualifier_list()
 
         assert False, "Not implemented"

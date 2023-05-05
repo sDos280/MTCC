@@ -11,6 +11,7 @@ class CTypeQualifier(enum.Enum):
 class CBasicDataTypes(enum.Enum):
     Void = enum.auto()
     Char = enum.auto()
+    Short = enum.auto()
     Int = enum.auto()
     Long = enum.auto()
     Float = enum.auto()
@@ -299,4 +300,4 @@ class FunctionCall:
 
 
 Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, FunctionCall, Function]
-CTypeSpecifier = Union[CTypeQualifier, CStruct, CUnion, CEnum]
+CTypeSpecifier = Union[CBasicDataTypes, CStruct, CUnion, CEnum, Identifier]

@@ -99,6 +99,45 @@ class Parser:
         else:
             raise eh.TypeQualifierNotFound("Expected a type qualifier token")
 
+    def peek_type_specifier(self) -> CTypeSpecifier:
+        if self.is_token_kind(tk.TokenKind.VOID):
+            self.peek_token()  # peek void token
+            return CBasicDataTypes.Void
+        elif self.is_token_kind(tk.TokenKind.CHAR):
+            self.peek_token()  # peek char token
+            return CBasicDataTypes.Char
+        elif self.is_token_kind(tk.TokenKind.SHORT):
+            self.peek_token()  # peek short token
+            return CBasicDataTypes.Short
+        elif self.is_token_kind(tk.TokenKind.INT):
+            self.peek_token()  # peek int token
+            return CBasicDataTypes.Int
+        elif self.is_token_kind(tk.TokenKind.LONG):
+            self.peek_token()  # peek long token
+            return CBasicDataTypes.Long
+        elif self.is_token_kind(tk.TokenKind.FLOAT):
+            self.peek_token()  # peek float token
+            return CBasicDataTypes.Float
+        elif self.is_token_kind(tk.TokenKind.DOUBLE):
+            self.peek_token()  # peek double token
+            return CBasicDataTypes.Double
+        elif self.is_token_kind(tk.TokenKind.SIGNED):
+            self.peek_token()  # peek signed token
+            return CBasicDataTypes.Signed
+        elif self.is_token_kind(tk.TokenKind.UNSIGNED):
+            self.peek_token()  # peek unsigned token
+            return CBasicDataTypes.Unsigned
+        elif self.is_token_kind(tk.TokenKind.STRUCT):
+            assert False, "Not implemented"
+        elif self.is_token_kind(tk.TokenKind.UNION):
+            assert False, "Not implemented"
+        elif self.is_token_kind(tk.TokenKind.ENUM):
+            assert False, "Not implemented"
+        elif self.is_token_kind(tk.TokenKind.Identifier):
+            assert False, "Not implemented"
+        else:
+            raise eh.TypeQualifierNotFound("Expected a type qualifier token")
+
     def peek_specifier_qualifier_list(self) -> Node:
         if self.is_token_type_specifier():
             assert False, "Not implemented"

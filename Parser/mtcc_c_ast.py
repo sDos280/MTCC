@@ -10,14 +10,31 @@ class CTypeQualifier(enum.Enum):
 
 class CBasicDataTypes(enum.Enum):
     Void = enum.auto()
-    Char = enum.auto()
     Short = enum.auto()
+    Char = enum.auto()
     Int = enum.auto()
     Long = enum.auto()
     Float = enum.auto()
     Double = enum.auto()
     Signed = enum.auto()
     Unsigned = enum.auto()
+
+
+class CPrimitiveDataTypes(enum.Enum):
+    Void = enum.auto()
+    Short = enum.auto()
+    UShort = enum.auto()
+    Char = enum.auto()
+    UChar = enum.auto()
+    Int = enum.auto()
+    UInt = enum.auto()
+    Long = enum.auto()
+    ULong = enum.auto()
+    LongLong = enum.auto()
+    ULongLong = enum.auto()
+    Float = enum.auto()
+    Double = enum.auto()
+    LongDouble = enum.auto()
 
 
 class CStruct:
@@ -28,15 +45,28 @@ class CUnion:
     pass
 
 
+class CTypedef:
+    pass
+
+
 class CTypeName:
-    def __init__(self, specifier_qualifier_list, abstract_declarator):
-        self.specifier_qualifier_list = specifier_qualifier_list
+    def __init__(self, is_const: bool, is_volatile: bool, type: CPrimitiveDataTypes | CStruct | CUnion | CEnum | CTypedef, abstract_declarator):
+        self.is_const: bool = is_const
+        self.is_volatile: bool = is_volatile
+        self.type: CPrimitiveDataTypes | CStruct | CUnion | CEnum | CTypedef = type
         self.abstract_declarator = abstract_declarator
 
+
     def __str__(self):
-        str_: str = f"{self.specifier_qualifier_list}"
-        if self.abstract_declarator is not None:
-            str_ += f"{self.abstract_declarator}"
+        str_: str = ""
+
+        if self.is_const:
+            str_ += "const "
+        if self.is_volatile:
+            str_ += "volatile "
+
+        str_ += str(self.type)
+        str_ += str(self.abstract_declarator)
 
         return str_
 
@@ -300,4 +330,4 @@ class FunctionCall:
 
 
 Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, FunctionCall, Function]
-CTypeSpecifier = Union[CBasicDataTypes, CStruct, CUnion, CEnum, Identifier]
+TypeSpecifier = Union[CBasicDataTypes, CStruct, CUnion, CEnum, Identifier]

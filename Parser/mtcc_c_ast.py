@@ -8,6 +8,25 @@ class CTypeQualifier(enum.Enum):
     Volatile = enum.auto()
 
 
+class CBasicDataTypes(enum.Enum):
+    Void = enum.auto()
+    Char = enum.auto()
+    Int = enum.auto()
+    Long = enum.auto()
+    Float = enum.auto()
+    Double = enum.auto()
+    Signed = enum.auto()
+    Unsigned = enum.auto()
+
+
+class CStruct:
+    pass
+
+
+class CUnion:
+    pass
+
+
 class CTypeName:
     def __init__(self, specifier_qualifier_list, abstract_declarator):
         self.specifier_qualifier_list = specifier_qualifier_list
@@ -280,3 +299,4 @@ class FunctionCall:
 
 
 Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, FunctionCall, Function]
+CTypeSpecifier = Union[CTypeQualifier, CStruct, CUnion, CEnum]

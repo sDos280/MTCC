@@ -55,6 +55,9 @@ class Parser:
             [tk.TokenKind.CONST,
              tk.TokenKind.VOLATILE])
 
+    def is_specifier_qualifier_list(self) -> bool:
+        return self.is_token_type_specifier() or self.is_token_type_qualifier()
+
     def get_line_string(self, line: int) -> str:
         lines: list[str] = self.source_string.split('\n')
         if line <= len(lines):
@@ -138,13 +141,17 @@ class Parser:
         else:
             raise eh.TypeQualifierNotFound("Expected a type qualifier token")
 
-    def peek_specifier_qualifier_list(self) -> Node:
-        if self.is_token_type_specifier():
-            assert False, "Not implemented"
-        elif self.is_token_type_qualifier():
-            type_qualifier: CTypeQualifier = self.peek_type_qualifier()
-        else:
-            raise eh.SpecifierQualifierListNotFound("Expected a specifier qualifier list token")
+    def peek_specifier_qualifier_list(self) -> list[CTypeQualifier | CTypeSpecifier]:
+        list_: list[CTypeQualifier | CTypeSpecifier] = []
+        while True:
+            if self.is_token_type_specifier():
+                type_specifier: CTypeSpecifier = self.peek_type_specifier()
+                list_.append(type_specifier)
+            elif self.is_token_type_qualifier():
+                type_qualifier: CTypeQualifier = self.peek_type_qualifier()
+                list_.append(type_qualifier)
+            else:
+                return list_
 
     def peek_type_name(self) -> Node:
         specifier_qualifier_list: Node = self.peek_specifier_qualifier_list()

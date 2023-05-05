@@ -3,6 +3,24 @@ from typing import Union
 import enum
 
 
+class CTypeQualifier(enum.Enum):
+    Const = enum.auto()
+    Volatile = enum.auto()
+
+
+class CTypeName:
+    def __init__(self, specifier_qualifier_list, abstract_declarator):
+        self.specifier_qualifier_list = specifier_qualifier_list
+        self.abstract_declarator = abstract_declarator
+
+    def __str__(self):
+        str_: str = f"{self.specifier_qualifier_list}"
+        if self.abstract_declarator is not None:
+            str_ += f"{self.abstract_declarator}"
+
+        return str_
+
+
 class CBinaryOpKind(enum.Enum):
     Addition = enum.auto()
     Subtraction = enum.auto()

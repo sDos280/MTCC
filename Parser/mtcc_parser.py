@@ -89,13 +89,23 @@ class Parser:
 
         return False
 
+    def peek_type_qualifier(self) -> CTypeQualifier:
+        if self.is_token_kind(tk.TokenKind.CONST):
+            self.peek_token()  # peek const token
+            return CTypeQualifier.Const
+        elif self.is_token_kind(tk.TokenKind.VOLATILE):
+            self.peek_token()  # peek volatile token
+            return CTypeQualifier.Volatile
+        else:
+            raise eh.TypeQualifierNotFound("Expected a type qualifier token")
+
     def peek_specifier_qualifier_list(self) -> Node:
         if self.is_token_type_specifier():
-
+            assert False, "Not implemented"
         elif self.is_token_type_qualifier():
-
+            type_qualifier: CTypeQualifier = self.peek_type_qualifier()
         else:
-            raise eh.SpecifierQualifierListNotFound("Expected a primary expression token")
+            raise eh.SpecifierQualifierListNotFound("Expected a specifier qualifier list token")
 
     def peek_type_name(self) -> Node:
         specifier_qualifier_list: Node = self.peek_specifier_qualifier_list()

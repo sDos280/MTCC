@@ -70,7 +70,7 @@ class Parser:
         start_of_line = self.source_string.rfind('\n', 0, index) + 1 if '\n' in self.source_string[:index] else 0
         return self.source_string[start_of_line:index]
 
-    def expect_token_kind(self, kind: tk.TokenKind, error_string: str, raise_exception) -> None:
+    def expect_token_kind(self, kind: list[tk.TokenKind] | tk.TokenKind, error_string: str, raise_exception) -> None:
         if not self.is_token_kind(kind):
             line_string: str = self.get_line_string(self.current_token.line)
             sub_line_string: str = self.get_line_substring_at_index(self.current_token.start)  # the sub line right up to the token start
@@ -202,63 +202,44 @@ class Parser:
 
         return False
 
-    def peek_type_qualifier(self) -> CTypeQualifier:
-        if self.is_token_kind(tk.TokenKind.CONST):
-            self.peek_token()  # peek const token
-            return CTypeQualifier.Const
-        elif self.is_token_kind(tk.TokenKind.VOLATILE):
-            self.peek_token()  # peek volatile token
-            return CTypeQualifier.Volatile
-        else:
-            raise eh.TypeQualifierNotFound("Expected a type qualifier token")
+    def peek_token_type_qualifier(self) -> tk.Token:
+        self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token", eh.TypeQualifierNotFound)
+        token: tk.Token = self.current_token
+        self.peek_token()  # peek the token
+        return token
 
-    def peek_type_specifier(self) -> TypeSpecifier:
-        if self.is_token_kind(tk.TokenKind.VOID):
-            self.peek_token()  # peek void token
-            return CBasicDataTypes.Void
-        elif self.is_token_kind(tk.TokenKind.CHAR):
-            self.peek_token()  # peek char token
-            return CBasicDataTypes.Char
-        elif self.is_token_kind(tk.TokenKind.SHORT):
-            self.peek_token()  # peek short token
-            return CBasicDataTypes.Short
-        elif self.is_token_kind(tk.TokenKind.INT):
-            self.peek_token()  # peek int token
-            return CBasicDataTypes.Int
-        elif self.is_token_kind(tk.TokenKind.LONG):
-            self.peek_token()  # peek long token
-            return CBasicDataTypes.Long
-        elif self.is_token_kind(tk.TokenKind.FLOAT):
-            self.peek_token()  # peek float token
-            return CBasicDataTypes.Float
-        elif self.is_token_kind(tk.TokenKind.DOUBLE):
-            self.peek_token()  # peek double token
-            return CBasicDataTypes.Double
-        elif self.is_token_kind(tk.TokenKind.SIGNED):
-            self.peek_token()  # peek signed token
-            return CBasicDataTypes.Signed
-        elif self.is_token_kind(tk.TokenKind.UNSIGNED):
-            self.peek_token()  # peek unsigned token
-            return CBasicDataTypes.Unsigned
-        elif self.is_token_kind(tk.TokenKind.STRUCT):
-            assert False, "Not implemented"
-        elif self.is_token_kind(tk.TokenKind.UNION):
-            assert False, "Not implemented"
-        elif self.is_token_kind(tk.TokenKind.ENUM):
-            assert False, "Not implemented"
-        elif self.is_token_kind(tk.TokenKind.Identifier):
-            assert False, "Not implemented"
-        else:
-            raise eh.TypeQualifierNotFound("Expected a type qualifier token")
+    def peek_token_type_specifier(self) -> tk.Token:
+        self.expect_token_kind(
+            [
+                tk.TokenKind.VOID,
+                tk.TokenKind.CHAR,
+                tk.TokenKind.SHORT,
+                tk.TokenKind.INT,
+                tk.TokenKind.LONG,
+                tk.TokenKind.FLOAT,
+                tk.TokenKind.DOUBLE,
+                tk.TokenKind.SIGNED,
+                tk.TokenKind.UNSIGNED,
+                tk.TokenKind.STRUCT,
+                tk.TokenKind.UNION,
+                tk.TokenKind.ENUM,
+                tk.TokenKind.Identifier
+            ],
+            "Expected a type specifier token",
+            eh.TypeSpecifierNotFound
+        )
+        token: tk.Token = self.current_token
+        self.peek_token()  # peek the token
+        return token
 
-    def peek_specifier_qualifier_list(self) -> list[CTypeQualifier | TypeSpecifier]:
-        specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier] = []
+    def peek_specifier_qualifier_list(self) -> list[tk.Token]:
+        specifier_qualifier_list: list[tk.Token] = []
         while True:
             if self.is_token_type_qualifier():
-                type_qualifier: CTypeQualifier = self.peek_type_qualifier()
+                type_qualifier: tk.Token = self.peek_token_type_qualifier()
                 specifier_qualifier_list.append(type_qualifier)
             elif self.is_token_type_specifier():
-                type_specifier: TypeSpecifier = self.peek_type_specifier()
+                type_specifier: tk.Token = self.peek_token_type_specifier()
                 specifier_qualifier_list.append(type_specifier)
             else:
                 if len(specifier_qualifier_list) == 0 or not self.is_specifier_qualifier_list_valid(specifier_qualifier_list):
@@ -266,7 +247,7 @@ class Parser:
                 return specifier_qualifier_list
 
     def peek_type_name(self) -> CTypeName:
-        specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier] = self.peek_specifier_qualifier_list()
+        specifier_qualifier_list: list[tk.Token] = self.peek_specifier_qualifier_list()
 
         specifier: CSpecifierType = self.specifier_list_to_ctype_specifier(
             list(

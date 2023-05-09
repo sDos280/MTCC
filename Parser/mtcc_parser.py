@@ -275,15 +275,29 @@ class Parser:
         specifier: CSpecifierType = self.specifier_list_to_ctype_specifier(
             list(
                 filter(
-                    lambda s: s != tk.TokenKind.SIGNED,
+                    lambda s: s.kind != tk.TokenKind.SIGNED and s.kind != tk.TokenKind.CONST and s.kind != tk.TokenKind.VOLATILE,
                     specifier_qualifier_list
                 )
             )
         )
-        print(specifier)
 
-        exit()
-        assert False, "Not implemented"
+        qualifiers: list[tk.Token] = list(
+            filter(
+                lambda q: q.kind == tk.TokenKind.CONST or q == tk.TokenKind.VOLATILE,
+                specifier_qualifier_list
+            )
+        )
+
+        is_const: bool = False
+        is_volatile: bool = False
+        for qualifier in qualifiers:
+            if qualifier.kind == tk.TokenKind.CONST:
+                is_const = True
+            elif qualifier.kind == tk.TokenKind.VOLATILE:
+                is_volatile = True
+
+        assert False, "there is a need to implement abstract_declarator peek"
+        return CTypeName(is_const, is_volatile, specifier, None)
 
     def peek_primary_expression(self) -> Node:
         if self.is_token_kind(tk.TokenKind.INTEGER_LITERAL):

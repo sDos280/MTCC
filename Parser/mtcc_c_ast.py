@@ -24,6 +24,35 @@ class CPrimitiveDataTypes(enum.Enum):
     Double = enum.auto()
     LongDouble = enum.auto()
 
+    def __str__(self):
+        if self == CPrimitiveDataTypes.Void:
+            return "void"
+        elif self == CPrimitiveDataTypes.Short:
+            return "short"
+        elif self == CPrimitiveDataTypes.UShort:
+            return "unsigned short"
+        elif self == CPrimitiveDataTypes.Char:
+            return "char"
+        elif self == CPrimitiveDataTypes.UChar:
+            return "unsigned char"
+        elif self == CPrimitiveDataTypes.Int:
+            return "int"
+        elif self == CPrimitiveDataTypes.UInt:
+            return "unsigned int"
+        elif self == CPrimitiveDataTypes.Long:
+            return "long"
+        elif self == CPrimitiveDataTypes.ULong:
+            return "unsigned long"
+        elif self == CPrimitiveDataTypes.LongLong:
+            return "long long"
+        elif self == CPrimitiveDataTypes.ULongLong:
+            return "unsigned long long"
+        elif self == CPrimitiveDataTypes.Float:
+            return "float"
+        elif self == CPrimitiveDataTypes.Double:
+            return "double"
+        elif self == CPrimitiveDataTypes.LongDouble:
+            return "long double"
 
 class CStruct:
     pass
@@ -38,7 +67,7 @@ class CTypedef:
 
 
 class CTypeName:
-    def __init__(self, is_const: bool, is_volatile: bool, type: CPrimitiveDataTypes | CStruct | CUnion | CEnum | CTypedef, abstract_declarator):
+    def __init__(self, is_const: bool, is_volatile: bool, type: CSpecifierType, abstract_declarator):
         self.is_const: bool = is_const
         self.is_volatile: bool = is_volatile
         self.type: CPrimitiveDataTypes | CStruct | CUnion | CEnum | CTypedef = type

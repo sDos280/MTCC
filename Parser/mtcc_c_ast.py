@@ -338,4 +338,5 @@ class FunctionCall:
 
 
 Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, Function]
+CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
 TypeSpecifier = Union[CBasicDataTypes, CStruct, CUnion, CEnum, Identifier]

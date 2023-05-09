@@ -92,6 +92,68 @@ class Parser:
 
         return False
 
+    def specifier_list_to_ctype_specifier(self, specifier_list: list[TypeSpecifier]) -> CSpecifierType:
+        """convert a valid specifier list to a ctype specifier, make sure that you remove all the Signed specifier before calling this function"""
+        match len(specifier_list):
+            case 1:
+                match specifier_list[0]:
+                    case CBasicDataTypes.Void:
+                        return CPrimitiveDataTypes.Void
+                    case CBasicDataTypes.Short:
+                        return CPrimitiveDataTypes.Short
+                    case CBasicDataTypes.Char:
+                        return CPrimitiveDataTypes.Char
+                    case CBasicDataTypes.Int:
+                        return CPrimitiveDataTypes.Int
+                    case CBasicDataTypes.Long:
+                        return CPrimitiveDataTypes.Long
+                    case CBasicDataTypes.Float:
+                        return CPrimitiveDataTypes.Float
+                    case CBasicDataTypes.Double:
+                        return CPrimitiveDataTypes.Double
+                    case isinstance(specifier_qualifier, CStruct):
+                        assert False, "Not implemented"
+                    case isinstance(specifier_qualifier, CUnion):
+                        assert False, "Not implemented"
+                    case isinstance(specifier_qualifier, CEnum):
+                        assert False, "Not implemented"
+                    case TypeSpecifier.Identifier:
+                        assert False, "Not implemented"
+            case 2:
+                match specifier_list[0]:
+                    case CBasicDataTypes.Unsigned:
+                        match specifier_list[1]:
+                            case CBasicDataTypes.Short:
+                                return CPrimitiveDataTypes.UShort
+                            case CBasicDataTypes.Char:
+                                return CPrimitiveDataTypes.UChar
+                            case CBasicDataTypes.Int:
+                                return CPrimitiveDataTypes.UInt
+                            case CBasicDataTypes.Long:
+                                return CPrimitiveDataTypes.ULong
+                    case CBasicDataTypes.Long:
+                        match specifier_list[1]:
+                            case CBasicDataTypes.Long:
+                                return CPrimitiveDataTypes.LongLong
+                            case CBasicDataTypes.Int:
+                                return CPrimitiveDataTypes.Int
+                            case CBasicDataTypes.Double:
+                                return CPrimitiveDataTypes.LongDouble
+            case 3:
+                match specifier_list[0]:
+                    case CBasicDataTypes.Unsigned:
+                        match specifier_list[1]:
+                            case CBasicDataTypes.Long:
+                                match specifier_list[2]:
+                                    case CBasicDataTypes.Long:
+                                        return CPrimitiveDataTypes.ULongLong
+                    case CBasicDataTypes.Long:
+                        match specifier_list[1]:
+                            case CBasicDataTypes.Long:
+                                match specifier_list[2]:
+                                    case CBasicDataTypes.Int:
+                                        return CPrimitiveDataTypes.LongLong
+
     @staticmethod
     def is_specifier_qualifier_list_valid(specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier]) -> bool:
         """check if a specifier qualifier list is valid"""
@@ -110,7 +172,7 @@ class Parser:
                     unsigned_count += 1
                     if signed_count != 0:
                         return False
-                case CBasicDataTypes.Unsigned:
+                case CBasicDataTypes.Signed:
                     signed_count += 1
                     if unsigned_count != 0:
                         return False
@@ -206,7 +268,15 @@ class Parser:
     def peek_type_name(self) -> CTypeName:
         specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier] = self.peek_specifier_qualifier_list()
 
-        print(specifier_qualifier_list)
+        specifier: CSpecifierType = self.specifier_list_to_ctype_specifier(
+            list(
+                filter(
+                    lambda s: s != CBasicDataTypes.Signed,
+                    specifier_qualifier_list
+                )
+            )
+        )
+        print(specifier)
 
         exit()
         assert False, "Not implemented"

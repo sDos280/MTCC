@@ -245,8 +245,8 @@ class Parser:
                 type_specifier: tk.Token = self.peek_token_type_specifier()
                 specifier_qualifier_list.append(type_specifier)
             else:
-                if len(specifier_qualifier_list) == 0 or not self.is_specifier_qualifier_list_valid(specifier_qualifier_list):
-                    raise eh.SpecifierQualifierListEmpty("Expected a type qualifier or a type specifier")
+                if len(specifier_qualifier_list) == 0:
+                    self.fatal_token(self.current_token.start, "Expected a type qualifier or a type specifier")
                 return specifier_qualifier_list
 
     def peek_type_name(self) -> CTypeName:

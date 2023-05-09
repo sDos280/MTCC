@@ -226,7 +226,7 @@ class Lexer:
 
         self.peek_char()  # peek first char
 
-        while not self.is_char(END_OF_FILE) and str_ in tk.string_to_separator_or_operator.keys():
+        while not self.is_char(END_OF_FILE) and str_ in tk.string_to_separator_or_operator.keys() and self.is_char_operator_or_separator():
             str_ += self.current_char
             self.peek_char()
 

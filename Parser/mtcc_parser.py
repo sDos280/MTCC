@@ -277,8 +277,8 @@ class Parser:
             )
         )
 
-        if not self.is_specifier_list_valid(specifier_list):
-            self.fatal_token(specifier_list[0].index, "Invalid specifier list", SyntaxError)
+        if len(specifier_list) == 0:
+            self.fatal_token(self.current_token.index, "Expected a type specifier", eh.TypeSpecifierNotFound)
 
         specifier: CSpecifierType = self.specifier_list_to_ctype_specifier(specifier_list)
 

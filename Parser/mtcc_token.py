@@ -191,3 +191,4 @@ class Token:
         self.start: int = start  # the start char index
         self.line: int = line
         self.string: str = string  # the string of the token in the file (for debugging)
+        self.index: int = 0  # the index of the token in the token stream

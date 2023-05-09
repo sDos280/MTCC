@@ -123,6 +123,7 @@ class Parser:
                     case tk.TokenKind.ENUM:
                         assert False, "Not implemented"
                     case tk.TokenKind.Identifier:
+                        assert False, "there is a need to check if the identifier is a typedef"
                         assert False, "Not implemented"
                     case _:
                         self.fatal_token(self.current_token.index, "Invalid token type specifier", SyntaxError)
@@ -178,17 +179,15 @@ class Parser:
                         self.fatal_token(token_specifiers_list[0].index, "Invalid token type specifier", SyntaxError)
 
     @staticmethod
-    def is_specifier_qualifier_list_valid(specifier_qualifier_list: list[tk.Token]) -> bool:
-        """check if a specifier qualifier list is valid"""
+    def is_specifier_list_valid(specifier_list: list[tk.Token]) -> bool:
+        """check if a specifier list is valid"""
         long_count: int = 0
         signed_count: int = 0
         unsigned_count: int = 0
 
-        for specifier_qualifier in specifier_qualifier_list:
-            if isinstance(specifier_qualifier, CTypeQualifier):
-                continue
+        for specifier in specifier_list:
 
-            match specifier_qualifier.kind:
+            match specifier.kind:
                 case tk.TokenKind.VOID:
                     return long_count == 0 and signed_count == 0 and unsigned_count == 0
                 case tk.TokenKind.UNSIGNED:
@@ -220,7 +219,6 @@ class Parser:
                 case tk.TokenKind.ENUM:
                     return long_count == 0 and signed_count == 0 and unsigned_count == 0
                 case tk.TokenKind.Identifier:
-                    assert False, "there is a need to check if the identifier is a typedef"
                     return long_count == 0 and signed_count == 0 and unsigned_count == 0
 
         return False
@@ -272,16 +270,19 @@ class Parser:
     def peek_type_name(self) -> CTypeName:
         specifier_qualifier_list: list[tk.Token] = self.peek_specifier_qualifier_list()
 
-        specifier: CSpecifierType = self.specifier_list_to_ctype_specifier(
-            list(
-                filter(
-                    lambda s: s.kind != tk.TokenKind.SIGNED and s.kind != tk.TokenKind.CONST and s.kind != tk.TokenKind.VOLATILE,
-                    specifier_qualifier_list
-                )
+        specifier_list: list[tk.Token] = list(
+            filter(
+                lambda s: s.kind != tk.TokenKind.SIGNED and s.kind != tk.TokenKind.CONST and s.kind != tk.TokenKind.VOLATILE,
+                specifier_qualifier_list
             )
         )
 
-        qualifiers: list[tk.Token] = list(
+        if not self.is_specifier_list_valid(specifier_list):
+            self.fatal_token(specifier_list[0].index, "Invalid specifier list", SyntaxError)
+
+        specifier: CSpecifierType = self.specifier_list_to_ctype_specifier(specifier_list)
+
+        qualifiers_list: list[tk.Token] = list(
             filter(
                 lambda q: q.kind == tk.TokenKind.CONST or q == tk.TokenKind.VOLATILE,
                 specifier_qualifier_list
@@ -290,13 +291,13 @@ class Parser:
 
         is_const: bool = False
         is_volatile: bool = False
-        for qualifier in qualifiers:
+        for qualifier in qualifiers_list:
             if qualifier.kind == tk.TokenKind.CONST:
                 is_const = True
             elif qualifier.kind == tk.TokenKind.VOLATILE:
                 is_volatile = True
 
-        assert False, "there is a need to implement abstract_declarator peek"
+
         return CTypeName(is_const, is_volatile, specifier, None)
 
     def peek_primary_expression(self) -> Node:

@@ -95,67 +95,85 @@ class Parser:
 
         return False
 
-    def specifier_list_to_ctype_specifier(self, specifier_list: list[TypeSpecifier]) -> CSpecifierType:
+    def specifier_list_to_ctype_specifier(self, token_specifiers_list: list[tk.Token]) -> CSpecifierType:
         """convert a valid specifier list to a ctype specifier, make sure that you remove all the Signed specifier before calling this function"""
-        match len(specifier_list):
+        match len(token_specifiers_list):
             case 1:
-                match specifier_list[0]:
-                    case CBasicDataTypes.Void:
+                match token_specifiers_list[0]:
+                    case tk.TokenKind.VOID:
                         return CPrimitiveDataTypes.Void
-                    case CBasicDataTypes.Short:
+                    case tk.TokenKind.CHAR:
                         return CPrimitiveDataTypes.Short
-                    case CBasicDataTypes.Char:
+                    case tk.TokenKind.SHORT:
                         return CPrimitiveDataTypes.Char
-                    case CBasicDataTypes.Int:
+                    case tk.TokenKind.INT:
                         return CPrimitiveDataTypes.Int
-                    case CBasicDataTypes.Long:
+                    case tk.TokenKind.LONG:
                         return CPrimitiveDataTypes.Long
-                    case CBasicDataTypes.Float:
+                    case tk.TokenKind.FLOAT:
                         return CPrimitiveDataTypes.Float
-                    case CBasicDataTypes.Double:
+                    case tk.TokenKind.DOUBLE:
                         return CPrimitiveDataTypes.Double
-                    case isinstance(specifier_qualifier, CStruct):
+                    case tk.TokenKind.STRUCT:
                         assert False, "Not implemented"
-                    case isinstance(specifier_qualifier, CUnion):
+                    case tk.TokenKind.UNION:
                         assert False, "Not implemented"
-                    case isinstance(specifier_qualifier, CEnum):
+                    case tk.TokenKind.ENUM:
                         assert False, "Not implemented"
-                    case TypeSpecifier.Identifier:
+                    case tk.TokenKind.Identifier:
                         assert False, "Not implemented"
+                    case _:
+                        self.fatal_token(token_specifiers_list[0].start, "Invalid token type specifier", SyntaxError)
             case 2:
-                match specifier_list[0]:
-                    case CBasicDataTypes.Unsigned:
-                        match specifier_list[1]:
-                            case CBasicDataTypes.Short:
+                match token_specifiers_list[0]:
+                    case tk.TokenKind.UNSIGNED:
+                        match token_specifiers_list[1]:
+                            case tk.TokenKind.SHORT:
                                 return CPrimitiveDataTypes.UShort
-                            case CBasicDataTypes.Char:
+                            case tk.TokenKind.CHAR:
                                 return CPrimitiveDataTypes.UChar
-                            case CBasicDataTypes.Int:
+                            case tk.TokenKind.INT:
                                 return CPrimitiveDataTypes.UInt
-                            case CBasicDataTypes.Long:
+                            case tk.TokenKind.LONG:
                                 return CPrimitiveDataTypes.ULong
-                    case CBasicDataTypes.Long:
-                        match specifier_list[1]:
-                            case CBasicDataTypes.Long:
+                            case _:
+                                self.fatal_token(token_specifiers_list[1].start, "Invalid token type specifier", SyntaxError)
+                    case tk.TokenKind.LONG:
+                        match token_specifiers_list[1]:
+                            case tk.TokenKind.LONG:
                                 return CPrimitiveDataTypes.LongLong
-                            case CBasicDataTypes.Int:
+                            case tk.TokenKind.INT:
                                 return CPrimitiveDataTypes.Int
-                            case CBasicDataTypes.Double:
+                            case tk.TokenKind.DOUBLE:
                                 return CPrimitiveDataTypes.LongDouble
+                            case _:
+                                self.fatal_token(token_specifiers_list[1].start, "Invalid token type specifier", SyntaxError)
+                    case _:
+                        self.fatal_token(token_specifiers_list[0].start, "Invalid token type specifier", SyntaxError)
             case 3:
-                match specifier_list[0]:
-                    case CBasicDataTypes.Unsigned:
-                        match specifier_list[1]:
-                            case CBasicDataTypes.Long:
-                                match specifier_list[2]:
-                                    case CBasicDataTypes.Long:
+                match token_specifiers_list[0]:
+                    case tk.TokenKind.UNSIGNED:
+                        match token_specifiers_list[1]:
+                            case tk.TokenKind.LONG:
+                                match token_specifiers_list[2]:
+                                    case tk.TokenKind.LONG:
                                         return CPrimitiveDataTypes.ULongLong
-                    case CBasicDataTypes.Long:
-                        match specifier_list[1]:
-                            case CBasicDataTypes.Long:
-                                match specifier_list[2]:
-                                    case CBasicDataTypes.Int:
+                                    case _:
+                                        self.fatal_token(token_specifiers_list[2].start, "Invalid token type specifier", SyntaxError)
+                            case _:
+                                self.fatal_token(token_specifiers_list[1].start, "Invalid token type specifier", SyntaxError)
+                    case tk.TokenKind.LONG:
+                        match token_specifiers_list[1]:
+                            case tk.TokenKind.LONG:
+                                match token_specifiers_list[2]:
+                                    case tk.TokenKind.INT:
                                         return CPrimitiveDataTypes.LongLong
+                                    case _:
+                                        self.fatal_token(token_specifiers_list[2].start, "Invalid token type specifier", SyntaxError)
+                            case _:
+                                self.fatal_token(token_specifiers_list[1].start, "Invalid token type specifier", SyntaxError)
+                    case _:
+                        self.fatal_token(token_specifiers_list[0].start, "Invalid token type specifier", SyntaxError)
 
     @staticmethod
     def is_specifier_qualifier_list_valid(specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier]) -> bool:
@@ -246,7 +264,7 @@ class Parser:
                 specifier_qualifier_list.append(type_specifier)
             else:
                 if len(specifier_qualifier_list) == 0:
-                    self.fatal_token(self.current_token.start, "Expected a type qualifier or a type specifier")
+                    self.fatal_token(self.current_token.start, "Expected a type qualifier or a type specifier", eh.SpecifierQualifierListEmpty)
                 return specifier_qualifier_list
 
     def peek_type_name(self) -> CTypeName:

@@ -92,6 +92,54 @@ class Parser:
 
         return False
 
+    @staticmethod
+    def is_specifier_qualifier_list_valid(specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier]) -> bool:
+        """check if a specifier qualifier list is valid"""
+        long_count: int = 0
+        signed_count: int = 0
+        unsigned_count: int = 0
+
+        for specifier_qualifier in specifier_qualifier_list:
+            if isinstance(specifier_qualifier, CTypeQualifier):
+                continue
+
+            match specifier_qualifier:
+                case CBasicDataTypes.Void:
+                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
+                case CBasicDataTypes.Unsigned:
+                    unsigned_count += 1
+                    if signed_count != 0:
+                        return False
+                case CBasicDataTypes.Unsigned:
+                    signed_count += 1
+                    if unsigned_count != 0:
+                        return False
+                case CBasicDataTypes.Short:
+                    return long_count == 0
+                case CBasicDataTypes.Char:
+                    return long_count == 0
+                case CBasicDataTypes.Int:
+                    return long_count <= 2
+                case CBasicDataTypes.Long:
+                    long_count += 1
+                    if long_count > 2:
+                        return False
+                case CBasicDataTypes.Float:
+                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
+                case CBasicDataTypes.Double:
+                    return long_count <= 1 and signed_count == 0 and unsigned_count == 0
+                case isinstance(specifier_qualifier, CStruct):
+                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
+                case isinstance(specifier_qualifier, CUnion):
+                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
+                case isinstance(specifier_qualifier, CEnum):
+                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
+                case TypeSpecifier.Identifier:
+                    assert False, "there is a need to check if the identifier is a typedef"
+                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
+
+        return False
+
     def peek_type_qualifier(self) -> CTypeQualifier:
         if self.is_token_kind(tk.TokenKind.CONST):
             self.peek_token()  # peek const token
@@ -102,7 +150,7 @@ class Parser:
         else:
             raise eh.TypeQualifierNotFound("Expected a type qualifier token")
 
-    def peek_type_specifier(self) -> CTypeSpecifier:
+    def peek_type_specifier(self) -> TypeSpecifier:
         if self.is_token_kind(tk.TokenKind.VOID):
             self.peek_token()  # peek void token
             return CBasicDataTypes.Void
@@ -141,21 +189,26 @@ class Parser:
         else:
             raise eh.TypeQualifierNotFound("Expected a type qualifier token")
 
-    def peek_specifier_qualifier_list(self) -> list[CTypeQualifier | CTypeSpecifier]:
-        list_: list[CTypeQualifier | CTypeSpecifier] = []
+    def peek_specifier_qualifier_list(self) -> list[CTypeQualifier | TypeSpecifier]:
+        specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier] = []
         while True:
-            if self.is_token_type_specifier():
-                type_specifier: CTypeSpecifier = self.peek_type_specifier()
-                list_.append(type_specifier)
-            elif self.is_token_type_qualifier():
+            if self.is_token_type_qualifier():
                 type_qualifier: CTypeQualifier = self.peek_type_qualifier()
-                list_.append(type_qualifier)
+                specifier_qualifier_list.append(type_qualifier)
+            elif self.is_token_type_specifier():
+                type_specifier: TypeSpecifier = self.peek_type_specifier()
+                specifier_qualifier_list.append(type_specifier)
             else:
-                return list_
+                if len(specifier_qualifier_list) == 0 or not self.is_specifier_qualifier_list_valid(specifier_qualifier_list):
+                    raise eh.SpecifierQualifierListEmpty("Expected a type qualifier or a type specifier")
+                return specifier_qualifier_list
 
-    def peek_type_name(self) -> Node:
-        specifier_qualifier_list: Node = self.peek_specifier_qualifier_list()
+    def peek_type_name(self) -> CTypeName:
+        specifier_qualifier_list: list[CTypeQualifier | TypeSpecifier] = self.peek_specifier_qualifier_list()
 
+        print(specifier_qualifier_list)
+
+        exit()
         assert False, "Not implemented"
 
     def peek_primary_expression(self) -> Node:
@@ -266,12 +319,28 @@ class Parser:
 
         return postfix_expression
 
-    def peek_cast_expression(self):
-
-        unary_expression: Node = self.peek_unary_expression()
+    def peek_cast_expression(self) -> Node:
 
         if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-            assert False, "Not implemented"
+            self.peek_token()  # peek ( token
+
+            if self.is_token_type_qualifier() or self.is_token_type_specifier():
+                type_name: CTypeName = self.peek_type_name()
+            else:  # not a cast but a "(" expression ")"
+                # we need to drop a token
+                self.drop_token()  # drop to the ( token
+                unary_expression: Node = self.peek_unary_expression()
+                return unary_expression
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing parenthesis", eh.TokenExpected)
+
+            self.peek_token()  # peek ) token
+
+            cast_expression: Node = self.peek_cast_expression()
+
+            return CCast(type_name, cast_expression)
+
+        unary_expression: Node = self.peek_unary_expression()
 
         return unary_expression
 

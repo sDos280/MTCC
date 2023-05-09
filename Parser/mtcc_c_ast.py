@@ -56,7 +56,6 @@ class CTypeName:
         self.type: CPrimitiveDataTypes | CStruct | CUnion | CEnum | CTypedef = type
         self.abstract_declarator = abstract_declarator
 
-
     def __str__(self):
         str_: str = ""
 
@@ -231,6 +230,15 @@ class CTernaryOp:
         return f"{self.condition} ? {self.true_value} : {self.false_value}"
 
 
+class CCast:
+    def __init__(self, cast_to: CTypeName, cast_expression: Node):
+        self.cast_to: CTypeName = cast_to
+        self.cast_expression: Node = cast_expression
+
+    def __str__(self):
+        return f"({self.cast_to}){self.cast_expression}"
+
+
 class CEnumMember:
     def __init__(self, name: str, value: int):
         self.name: str = name
@@ -329,5 +337,5 @@ class FunctionCall:
         return str_
 
 
-Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, FunctionCall, Function]
+Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, Function]
 TypeSpecifier = Union[CBasicDataTypes, CStruct, CUnion, CEnum, Identifier]

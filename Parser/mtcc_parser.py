@@ -297,7 +297,6 @@ class Parser:
             elif qualifier.kind == tk.TokenKind.VOLATILE:
                 is_volatile = True
 
-
         return CTypeName(is_const, is_volatile, specifier, None)
 
     def peek_primary_expression(self) -> Node:
@@ -707,6 +706,10 @@ class Parser:
         else:
             return assignment_expression
 
+    def peek_constant_expression(self) -> Node:
+        conditional_expression: Node = self.peek_conditional_expression()
+        return conditional_expression
+
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
         self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
 
@@ -720,7 +723,7 @@ class Parser:
         if self.is_token_kind(tk.TokenKind.EQUALS):
             self.peek_token()  # peek the equal token
 
-            member_assigned_value: int = self.peek_constant_expression()
+            member_assigned_value: Node = self.peek_constant_expression()
 
             member.value = member_assigned_value
             enum.current_member_value = member_assigned_value
@@ -740,8 +743,6 @@ class Parser:
             current_member = self.peek_enumerator(enum)
 
             members.append(current_member)
-
-            self.dont_expect_token_kind(tk.TokenKind.END, "Expecting an identifier or an close brace")
 
             if self.is_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE):
                 break

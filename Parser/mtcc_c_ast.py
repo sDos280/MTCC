@@ -257,9 +257,9 @@ class CCast:
 
 
 class CEnumMember:
-    def __init__(self, name: str, value: int):
+    def __init__(self, name: str, value: Node):
         self.name: str = name
-        self.value: int = value
+        self.value: Node = value
 
     def __str__(self) -> str:
         return f"{self.name} = {self.value}"

@@ -325,6 +325,8 @@ class Parser:
                     direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
                     return CAbstractPointer(pointer_level, direct_abstract_declarator)
             else:
+                if pointer_level == 0:
+                    self.fatal_token(self.current_token.index, "Expected a abstract declarator", eh.DirectAbstractDeclaratorNotFound)
                 return CAbstractPointer(pointer_level, None)
 
     def peek_direct_abstract_declarator(self) -> AbstractType | list[CParameter]:

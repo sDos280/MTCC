@@ -54,6 +54,7 @@ class CPrimitiveDataTypes(enum.Enum):
         elif self == CPrimitiveDataTypes.LongDouble:
             return "long double"
 
+
 class CStruct:
     pass
 
@@ -322,14 +323,43 @@ class Block:
         return "{" + ";".join(str(s) for s in self.statements) + "}"
 
 
-class Function:
-    def __init__(self, name: str, parameters_type: list):
+class CParameter:
+    def __init__(self, name: str, type: CTypeName):
         self.name: str = name
-        self.parameters_type: list = parameters_type
+        self.type: CTypeName = type
 
     def __str__(self):
-        str_ = f"{self.name}("
-        for parameter in self.parameters_type:
+        return f"{self.type} {self.name}"
+
+
+class CAbstractArray:
+    def __init__(self, size: Node, array_of: AbstractType):
+        self.size: Node = size
+        self.array_of: AbstractType = array_of
+
+    def __str__(self):
+        return f"{self.array_of}[{self.size}]"
+
+
+class CAbstractPointer:
+    def __init__(self, pointer_level: int, pointer_to: AbstractType):
+        self.pointer_level: int = pointer_level
+        self.pointer_to: AbstractType = pointer_to
+
+    def __str__(self):
+        return f"{self.pointer_to}{'*' * self.pointer_level}"
+
+
+class Function:
+    def __init__(self, name: str, parameters: list[CParameter], return_type: CTypeName):
+        self.name: str = name
+        self.parameters: list[CParameter] = parameters
+        self.return_type: CTypeName = return_type
+
+    def __str__(self):
+        str_ = f"{self.return_type} "
+        str_ += f"{self.name}("
+        for parameter in self.parameters:
             str_ += f"{parameter}, "
 
         str_ = str_[0:-2]
@@ -354,5 +384,6 @@ class FunctionCall:
         return str_
 
 
-Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, Function]
+Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, Function, CAbstractArray, CParameter]
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
+AbstractType = Union[Function, CAbstractPointer, CAbstractArray]

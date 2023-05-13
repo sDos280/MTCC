@@ -19,8 +19,8 @@ class Parser:
 
         self.enums: list[CEnum] = []
         self.variables: list[Variable] = []  # variables declension list
-        self.function_declension: list[Function] = []
-        self.function: list[Function]  # functions ast code
+        self.function_declension: list[CFunction] = []
+        self.function: list[CFunction]  # functions ast code
 
     def peek_token(self) -> None:  # increase the index and update the current token
         self.index += 1
@@ -28,6 +28,10 @@ class Parser:
 
     def drop_token(self) -> None:  # decrease the index and update the current token
         self.index -= 1
+        self.current_token = self.tokens[self.index]
+
+    def set_index_token(self, index: int) -> None:
+        self.index = index
         self.current_token = self.tokens[self.index]
 
     def is_token_kind(self, kind: list[tk.TokenKind] | tk.TokenKind) -> bool:
@@ -305,10 +309,21 @@ class Parser:
             elif qualifier.kind == tk.TokenKind.VOLATILE:
                 is_volatile = True
 
-        return CTypeName(is_const, is_volatile, specifier, None)
+        abstract_declarator: AbstractType = None
+        if self.is_abstract_declarator():
+            abstract_declarator: AbstractType = self.peek_abstract_declarator()
+            abstract_declarator_bottom: AbstractType = abstract_declarator.get_child_bottom()
+            """if isinstance(abstract_declarator_bottom, CFunction):
+                abstract_declarator_bottom.return_type = abstract_declarator
+                abstract_declarator.pointer_to = specifier"""
+
+        return CTypeName(is_const, is_volatile, specifier, abstract_declarator)
 
     def peek_parameter_type_list(self) -> list[CParameter]:
-        pass
+        if self.is_abstract_declarator():
+            raise SyntaxError("Expected a parameter type list")
+        else:
+            return list[CParameter]()
 
     def peek_abstract_declarator(self) -> AbstractType:
         pointer_level: int = 0
@@ -330,41 +345,61 @@ class Parser:
                 return CAbstractPointer(pointer_level, None)
 
     def peek_direct_abstract_declarator(self) -> AbstractType | list[CParameter]:
-        direct_abstract_declarator: AbstractType | list[CParameter] = None
-
-        while True:
-            if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-                self.peek_token()  # peek ( token
-                if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
-                    self.peek_token()  # peek ) token
-
-                    direct_abstract_declarator = list[CParameter]()
-                    continue
-
-                abstract_declarator: AbstractType | list[CParameter] = self.peek_abstract_declarator()
-                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
+        if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            self.peek_token()  # peek ( token
+            if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
                 self.peek_token()  # peek ) token
-                direct_abstract_declarator.pointer_to = abstract_declarator
 
-            elif self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
-                self.peek_token()  # peek [ token
-                if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
-                    self.peek_token()  # peek ] token
+                return list[CParameter]()
 
-                    direct_abstract_declarator = CAbstractArray(None, direct_abstract_declarator)
-                    continue
+            index_before_peek: int = self.current_token.index
 
-                constant_expression: Node = self.peek_constant_expression()
+            try:
+                parameter_type_list: list[CParameter] = self.peek_parameter_type_list()
+                self.peek_token()  # peek ) token
+                return parameter_type_list
+            except:
+                self.set_index_token(index_before_peek)
 
-                self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected a ] token", eh.TokenExpected)
+            abstract_declarator: AbstractType | list[CParameter] = self.peek_abstract_declarator()
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
+            self.peek_token()  # peek ) token
 
+            if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):  # an abstract function
+                self.peek_token()  # peek ( token
+                if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):  # no parameters
+                    self.peek_token()  # peek ) token
+                    parameter_type_list = list[CParameter]()
+                else:
+                    parameter_type_list: list[CParameter] = self.peek_direct_abstract_declarator()
+                    self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
+                    self.peek_token()  # peek ) token
+                if isinstance(abstract_declarator, CAbstractPointer):  # convert the pointer to an abstract function pointer
+                    abstract_declarator.pointer_to = CFunction("", parameter_type_list, None)
+                    return abstract_declarator
+                else:
+                    assert False, "Need error raise"
+            else:
+                return abstract_declarator
+
+        """elif self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
+            self.peek_token()  # peek [ token
+            if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
                 self.peek_token()  # peek ] token
 
-                direct_abstract_declarator = CAbstractArray(constant_expression, direct_abstract_declarator)
-            else:
-                if direct_abstract_declarator is None:
-                    self.fatal_token(self.current_token.index, "Expected a direct abstract declarator", eh.DirectAbstractDeclaratorNotFound)
-                return direct_abstract_declarator
+                return CAbstractArray(None, None)
+
+            constant_expression: Node = self.peek_constant_expression()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected a ] token", eh.TokenExpected)
+
+            self.peek_token()  # peek ] token
+
+            direct_abstract_declarator = CAbstractArray(constant_expression, direct_abstract_declarator)
+        else:
+            if direct_abstract_declarator is None:
+                self.fatal_token(self.current_token.index, "Expected a direct abstract declarator", eh.DirectAbstractDeclaratorNotFound)
+            return direct_abstract_declarator"""
 
     def peek_primary_expression(self) -> Node:
         if self.is_token_kind(tk.TokenKind.INTEGER_LITERAL):
@@ -475,7 +510,6 @@ class Parser:
         return postfix_expression
 
     def peek_cast_expression(self) -> Node:
-
         if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
             self.peek_token()  # peek ( token
 

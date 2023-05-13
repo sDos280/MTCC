@@ -337,6 +337,18 @@ class CAbstractArray:
         self.size: Node = size
         self.array_of: AbstractType = array_of
 
+    def get_child_bottom(self) -> AbstractType:
+        if self.array_of is None:
+            return None
+        elif isinstance(self.array_of, CFunction):
+            return self.array_of
+        else:
+            temp = self.array_of.get_child_bottom()
+            if temp is None:
+                return self.array_of
+            else:
+                return self.array_of.get_child_bottom()
+
     def __str__(self):
         return f"{self.array_of}[{self.size}]"
 
@@ -346,11 +358,23 @@ class CAbstractPointer:
         self.pointer_level: int = pointer_level
         self.pointer_to: AbstractType = pointer_to
 
+    def get_child_bottom(self) -> AbstractType:
+        if self.pointer_to is None:
+            return None
+        elif isinstance(self.pointer_to, CFunction):
+            return self.pointer_to
+        else:
+            temp = self.pointer_to.get_child_bottom()
+            if temp is None:
+                return self.pointer_to
+            else:
+                return self.pointer_to.get_child_bottom()
+
     def __str__(self):
-        return f"{self.pointer_to}{'*' * self.pointer_level}"
+        return f"{self.pointer_to if self.pointer_to is not None else ''}{'*' * self.pointer_level}"
 
 
-class Function:
+class CFunction:
     def __init__(self, name: str, parameters: list[CParameter], return_type: CTypeName):
         self.name: str = name
         self.parameters: list[CParameter] = parameters
@@ -359,18 +383,19 @@ class Function:
     def __str__(self):
         str_ = f"{self.return_type} "
         str_ += f"{self.name}("
-        for parameter in self.parameters:
-            str_ += f"{parameter}, "
+        if len(self.parameters) != 0:
+            for parameter in self.parameters:
+                str_ += f"{parameter}, "
+            str_ = str_[0:-2]
 
-        str_ = str_[0:-2]
         str_ += ")"
 
         return str_
 
 
 class FunctionCall:
-    def __init__(self, function: Function, parameters_type: list):
-        self.function: Function = function
+    def __init__(self, function: CFunction, parameters_type: list):
+        self.function: CFunction = function
         self.parameters_type: list = parameters_type
 
     def __str__(self):
@@ -384,6 +409,6 @@ class FunctionCall:
         return str_
 
 
-Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, Function, CAbstractArray, CParameter]
+Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, CFunction, CAbstractArray, CParameter]
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
-AbstractType = Union[Function, CAbstractPointer, CAbstractArray]
+AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray]

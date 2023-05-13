@@ -310,14 +310,19 @@ class Parser:
                 is_volatile = True
 
         abstract_declarator: AbstractType = None
+        abstract_declarator_copy: AbstractType = None
         if self.is_abstract_declarator():
             abstract_declarator: AbstractType = self.peek_abstract_declarator()
+            abstract_declarator_copy: AbstractType = abstract_declarator.copy()
+            abstract_declarator_copy.pointer_to = abstract_declarator.pointer_to
             abstract_declarator_bottom: AbstractType = abstract_declarator.get_child_bottom()
-            """if isinstance(abstract_declarator_bottom, CFunction):
-                abstract_declarator_bottom.return_type = abstract_declarator
-                abstract_declarator.pointer_to = specifier"""
 
-        return CTypeName(is_const, is_volatile, specifier, abstract_declarator)
+            if isinstance(abstract_declarator_bottom, CAbstractFunction):
+                abstract_declarator_copy.pointer_level = 1
+                abstract_declarator.pointer_to = specifier
+                abstract_declarator_bottom.return_type = abstract_declarator
+
+        return CTypeName(is_const, is_volatile, abstract_declarator_copy if abstract_declarator is not None else specifier)
 
     def peek_parameter_type_list(self) -> list[CParameter]:
         if self.is_abstract_declarator():
@@ -375,7 +380,7 @@ class Parser:
                     self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
                     self.peek_token()  # peek ) token
                 if isinstance(abstract_declarator, CAbstractPointer):  # convert the pointer to an abstract function pointer
-                    abstract_declarator.pointer_to = CFunction("", parameter_type_list, None)
+                    abstract_declarator = CAbstractFunction(parameter_type_list, None)
                     return abstract_declarator
                 else:
                     assert False, "Need error raise"

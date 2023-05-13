@@ -68,11 +68,10 @@ class CTypedef:
 
 
 class CTypeName:
-    def __init__(self, is_const: bool, is_volatile: bool, type: CSpecifierType, abstract_declarator):
+    def __init__(self, is_const: bool, is_volatile: bool, type: CSpecifierType | AbstractType):
         self.is_const: bool = is_const
         self.is_volatile: bool = is_volatile
-        self.type: CPrimitiveDataTypes | CStruct | CUnion | CEnum | CTypedef = type
-        self.abstract_declarator = abstract_declarator
+        self.type: CSpecifierType | AbstractType = type
 
     def __str__(self):
         str_: str = ""
@@ -83,7 +82,6 @@ class CTypeName:
             str_ += "volatile "
 
         str_ += str(self.type)
-        str_ += str(self.abstract_declarator)
 
         return str_
 
@@ -349,6 +347,9 @@ class CAbstractArray:
             else:
                 return self.array_of.get_child_bottom()
 
+    def copy(self):
+        return CAbstractArray(self.size, self.array_of)
+
     def __str__(self):
         return f"{self.array_of}[{self.size}]"
 
@@ -361,7 +362,7 @@ class CAbstractPointer:
     def get_child_bottom(self) -> AbstractType:
         if self.pointer_to is None:
             return None
-        elif isinstance(self.pointer_to, CFunction):
+        elif isinstance(self.pointer_to, CAbstractFunction):
             return self.pointer_to
         else:
             temp = self.pointer_to.get_child_bottom()
@@ -370,8 +371,29 @@ class CAbstractPointer:
             else:
                 return self.pointer_to.get_child_bottom()
 
+    def copy(self):
+        return CAbstractPointer(self.pointer_level, self.pointer_to)
+
     def __str__(self):
-        return f"{self.pointer_to if self.pointer_to is not None else ''}{'*' * self.pointer_level}"
+        return f"({self.pointer_to if self.pointer_to is not None else ''}){'*' * self.pointer_level if not isinstance(self.pointer_to, CAbstractFunction) else ''}"
+
+
+class CAbstractFunction:
+    def __init__(self, parameters: list[CParameter], return_type: CTypeName):
+        self.parameters: list[CParameter] = parameters
+        self.return_type: CTypeName = return_type
+
+    def __str__(self):
+        str_ = f"{self.return_type} "
+        str_ += f"(*)("
+        if len(self.parameters) != 0:
+            for parameter in self.parameters:
+                str_ += f"{parameter}, "
+            str_ = str_[0:-2]
+
+        str_ += ")"
+
+        return str_
 
 
 class CFunction:
@@ -409,6 +431,6 @@ class FunctionCall:
         return str_
 
 
-Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, CFunction, CAbstractArray, CParameter]
+Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, CAbstractArray, CAbstractFunction, CFunction, CAbstractArray, CParameter]
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
-AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray]
+AbstractType = Union[CAbstractFunction, CAbstractPointer, CAbstractArray]

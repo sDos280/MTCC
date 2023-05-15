@@ -372,7 +372,7 @@ class CAbstractPointer:
                 return self.pointer_to.get_child_bottom()
 
     def copy(self):
-        return CAbstractPointer(self.pointer_level, self.pointer_to)
+        return self
 
     def __str__(self):
         return f"{self.pointer_to if self.pointer_to is not None else ''}{'*' * self.pointer_level if not isinstance(self.pointer_to, CAbstractFunction) else ''}"

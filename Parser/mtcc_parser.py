@@ -310,19 +310,29 @@ class Parser:
                 is_volatile = True
 
         abstract_declarator: AbstractType = None
-        abstract_declarator_copy: AbstractType = None
         if self.is_abstract_declarator():
             abstract_declarator: AbstractType = self.peek_abstract_declarator()
-            abstract_declarator_copy: AbstractType = abstract_declarator.copy()
-            abstract_declarator_copy.pointer_to = abstract_declarator.pointer_to
-            abstract_declarator_bottom: AbstractType = abstract_declarator.get_child_bottom()
+            abstract_declarator_copy = abstract_declarator.copy()
+            abstract_declarator_bottom = abstract_declarator.get_child_bottom()
 
-            if isinstance(abstract_declarator_bottom, CAbstractFunction):
-                abstract_declarator_copy.pointer_level = 1
-                abstract_declarator.pointer_to = specifier
-                abstract_declarator_bottom.return_type = abstract_declarator
+            if isinstance(abstract_declarator_bottom, CAbstractPointer):
+                abstract_declarator_bottom.pointer_to = abstract_declarator
+            else:
+                abstract_declarator_bottom.array_of = abstract_declarator
 
-        return CTypeName(is_const, is_volatile, abstract_declarator_copy if abstract_declarator is not None else specifier)
+            if isinstance(abstract_declarator, CAbstractPointer):
+                abstract_declarator = abstract_declarator.pointer_to
+            else:
+                abstract_declarator = abstract_declarator.array_of
+
+            if isinstance(abstract_declarator_copy, CAbstractPointer):
+                abstract_declarator_copy.pointer_to = specifier
+            else:
+                abstract_declarator_copy.array_of = specifier
+
+
+
+        return CTypeName(is_const, is_volatile, abstract_declarator if abstract_declarator is not None else specifier)
 
     def peek_parameter_type_list(self) -> list[CParameter]:
         if self.is_abstract_declarator():
@@ -349,71 +359,66 @@ class Parser:
                     self.fatal_token(self.current_token.index, "Expected a abstract declarator", eh.DirectAbstractDeclaratorNotFound)
                 return CAbstractPointer(pointer_level, None)
 
-    def peek_direct_abstract_declarator(self) -> AbstractType | list[CParameter]:
+    def peek_direct_abstract_declarator(self) -> AbstractType:
+        sub_direct_abstract_declarator: AbstractType | list[CParameter] = self.peek_direct_abstract_declarator_1_2_3_6_7()
+        if self.is_direct_abstract_declarator():
+            if isinstance(sub_direct_abstract_declarator, list):
+                #  TODO: need to raise an error
+                pass
+            elif isinstance(sub_direct_abstract_declarator, CAbstractPointer):
+                sub_sub_direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
+                sub_direct_abstract_declarator.pointer_to = sub_sub_direct_abstract_declarator
+            elif isinstance(sub_direct_abstract_declarator, CAbstractArray):
+                sub_sub_direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
+                sub_direct_abstract_declarator.array_of = sub_sub_direct_abstract_declarator
+            elif isinstance(sub_direct_abstract_declarator, CAbstractFunction):
+                assert False, "Not implemented"
+        return sub_direct_abstract_declarator
+
+    def peek_direct_abstract_declarator_1_2_3_6_7(self) -> AbstractType | list[CParameter]:
+        """
+        direct_abstract_declarator
+            : '(' abstract_declarator ')'
+            | '[' ']'
+            | '[' constant_expression ']'
+            | '(' ')'
+            | '(' parameter_type_list ')'
+            ;
+        """
         if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
             self.peek_token()  # peek ( token
             if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
                 self.peek_token()  # peek ) token
 
                 return list[CParameter]()
-
-            index_before_peek: int = self.current_token.index
-
-            try:
-                parameter_type_list: list[CParameter] = self.peek_parameter_type_list()
-                self.peek_token()  # peek ) token
-                return parameter_type_list
-            except:
-                self.set_index_token(index_before_peek)
-
-            abstract_declarator: AbstractType | list[CParameter] = self.peek_abstract_declarator()
-            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
-            self.peek_token()  # peek ) token
-
-            if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):  # an abstract function
-                self.peek_token()  # peek ( token
-                if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):  # no parameters
-                    self.peek_token()  # peek ) token
-                    parameter_type_list = list[CParameter]()
-                else:
-                    parameter_type_list: list[CParameter] = self.peek_direct_abstract_declarator()
+            else:
+                index_before_peek: int = self.current_token.index
+                try:
+                    parameter_type_list: list[CParameter] = self.peek_parameter_type_list()
                     self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
                     self.peek_token()  # peek ) token
-                if isinstance(abstract_declarator, CAbstractPointer):  # convert the pointer to an abstract function pointer
-                    abstract_declarator = CAbstractFunction(parameter_type_list, None)
-                    return abstract_declarator
-                else:
-                    assert False, "Need error raise"
-            else:
-                return abstract_declarator
 
+                    return parameter_type_list
+                except:
+                    self.set_index_token(index_before_peek)
+                    abstract_declarator: AbstractType = self.peek_abstract_declarator()
+                    self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
+                    self.peek_token()  # peek ) token
+
+                    return abstract_declarator
         elif self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
             self.peek_token()  # peek [ token
             if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
                 self.peek_token()  # peek ] token
 
-                return None
-
-            constant_expression: Node = self.peek_constant_expression()
-
-            self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected a ] token", eh.TokenExpected)
-
-            self.peek_token()  # peek ] token
-
-            index_before_peek: int = self.current_token.index
-
-            try:
-                direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
-                self.peek_token()  # peek ) token
-                return parameter_type_list
-            except:
-                self.set_index_token(index_before_peek)
-
-
-
-            return CAbstractArray(constant_expression, None)
+                return CAbstractArray(None, None)
+            else:
+                constant_expression: Node = self.peek_constant_expression()
+                self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected a ] token", eh.TokenExpected)
+                self.peek_token()  # peek ] token
+                return CAbstractArray(constant_expression, None)
         else:
-            self.fatal_token(self.current_token.index, "Expected a direct abstract declarator", eh.DirectAbstractDeclaratorNotFound)
+            self.fatal_token(self.current_token.index, "Expected a ( or [ token", eh.TokenExpected)
 
     def peek_primary_expression(self) -> Node:
         if self.is_token_kind(tk.TokenKind.INTEGER_LITERAL):

@@ -387,12 +387,12 @@ class Parser:
             else:
                 return abstract_declarator
 
-        """elif self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
+        elif self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
             self.peek_token()  # peek [ token
             if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
                 self.peek_token()  # peek ] token
 
-                return CAbstractArray(None, None)
+                return None
 
             constant_expression: Node = self.peek_constant_expression()
 
@@ -400,11 +400,20 @@ class Parser:
 
             self.peek_token()  # peek ] token
 
-            direct_abstract_declarator = CAbstractArray(constant_expression, direct_abstract_declarator)
+            index_before_peek: int = self.current_token.index
+
+            try:
+                direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
+                self.peek_token()  # peek ) token
+                return parameter_type_list
+            except:
+                self.set_index_token(index_before_peek)
+
+
+
+            return CAbstractArray(constant_expression, None)
         else:
-            if direct_abstract_declarator is None:
-                self.fatal_token(self.current_token.index, "Expected a direct abstract declarator", eh.DirectAbstractDeclaratorNotFound)
-            return direct_abstract_declarator"""
+            self.fatal_token(self.current_token.index, "Expected a direct abstract declarator", eh.DirectAbstractDeclaratorNotFound)
 
     def peek_primary_expression(self) -> Node:
         if self.is_token_kind(tk.TokenKind.INTEGER_LITERAL):

@@ -351,7 +351,7 @@ class CAbstractArray:
         return CAbstractArray(self.size, self.array_of)
 
     def __str__(self):
-        return f"{self.array_of}[{self.size}]"
+        return f"{self.array_of}[{self.size if not (self.size is not None or self.size == 0) else ''}]"
 
 
 class CAbstractPointer:
@@ -375,7 +375,7 @@ class CAbstractPointer:
         return CAbstractPointer(self.pointer_level, self.pointer_to)
 
     def __str__(self):
-        return f"({self.pointer_to if self.pointer_to is not None else ''}){'*' * self.pointer_level if not isinstance(self.pointer_to, CAbstractFunction) else ''}"
+        return f"{self.pointer_to if self.pointer_to is not None else ''}{'*' * self.pointer_level if not isinstance(self.pointer_to, CAbstractFunction) else ''}"
 
 
 class CAbstractFunction:

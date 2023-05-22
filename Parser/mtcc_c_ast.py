@@ -3,7 +3,7 @@ from typing import Union
 import enum
 
 
-class CTypeQualifier(enum.Enum):
+class CQualifierKind(enum.Flag):
     Const = enum.auto()
     Volatile = enum.auto()
 
@@ -14,7 +14,7 @@ class CSpecifierKind(enum.Flag):
     Char = enum.auto()
     Int = enum.auto()
     Long = enum.auto()
-    float = enum.auto()
+    Float = enum.auto()
     Double = enum.auto()
     Signed = enum.auto()
     Unsigned = enum.auto()
@@ -444,6 +444,24 @@ class FunctionCall:
 
 
 Node = Union[
-    Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, CAbstractArray, CAbstractFunction, CFunction, CAbstractArray, CParameter]
+    Block,
+    CEnum,
+    CEnumMember,
+    Variable,
+    Number,
+    String,
+    Identifier,
+    CTernaryOp,
+    CBinaryOp,
+    CUnaryOp,
+    CCast,
+    FunctionCall,
+    CAbstractPointer,
+    CAbstractArray,
+    CAbstractFunction,
+    CFunction,
+    CAbstractArray,
+    CParameter
+]
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
 AbstractType = Union[CAbstractFunction, CAbstractPointer, CAbstractArray]

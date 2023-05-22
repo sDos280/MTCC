@@ -46,7 +46,7 @@ class TokenKind(enum.Enum):
     STRING_LITERAL = enum.auto()
 
     # Identifier
-    Identifier = enum.auto()
+    IDENTIFIER = enum.auto()
 
     # Separators and Operators
     ELLIPSIS = enum.auto()  # ...

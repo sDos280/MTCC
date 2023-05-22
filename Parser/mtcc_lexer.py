@@ -121,7 +121,7 @@ class Lexer:
             str_ += self.current_char
             self.peek_char()  # peek identifier char
 
-        return tk.Token(tk.TokenKind.Identifier, index_, self.current_line, str_)
+        return tk.Token(tk.TokenKind.IDENTIFIER, index_, self.current_line, str_)
 
     def peek_string_literal(self):
         index_: int = self.index

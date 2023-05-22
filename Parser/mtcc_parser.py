@@ -54,7 +54,7 @@ class Parser:
              tk.TokenKind.STRUCT,
              tk.TokenKind.UNION,
              tk.TokenKind.ENUM,
-             tk.TokenKind.Identifier])
+             tk.TokenKind.IDENTIFIER])
 
     def is_token_type_qualifier(self) -> bool:
         return self.is_token_kind(
@@ -78,7 +78,8 @@ class Parser:
 
     def fatal_token(self, token_location: int, error_string: str, raise_exception) -> None:
         line_string: str = self.get_line_string(self.tokens[token_location].line)
-        sub_line_string: str = self.get_line_substring_at_index(self.tokens[token_location].start)  # the sub line right up to the token start
+        sub_line_string: str = self.get_line_substring_at_index(
+            self.tokens[token_location].start)  # the sub line right up to the token start
         full_error_string: str = f"\nMTCC:{self.tokens[token_location].line + 1}:{len(sub_line_string) + 1}: "
         full_error_string += error_string + '\n'
         full_error_string += f"    | {line_string}\n"
@@ -101,142 +102,40 @@ class Parser:
 
         return False
 
-    def specifier_list_to_ctype_specifier(self, token_specifiers_list: list[tk.Token]) -> CSpecifierType:
-        """convert a valid specifier list to a ctype specifier, make sure that you remove all the Signed specifier before calling this function"""
-        match len(token_specifiers_list):
-            case 1:
-                match token_specifiers_list[0].kind:
-                    case tk.TokenKind.VOID:
-                        return CPrimitiveDataTypes.Void
-                    case tk.TokenKind.CHAR:
-                        return CPrimitiveDataTypes.Short
-                    case tk.TokenKind.SHORT:
-                        return CPrimitiveDataTypes.Char
-                    case tk.TokenKind.INT:
-                        return CPrimitiveDataTypes.Int
-                    case tk.TokenKind.LONG:
-                        return CPrimitiveDataTypes.Long
-                    case tk.TokenKind.FLOAT:
-                        return CPrimitiveDataTypes.Float
-                    case tk.TokenKind.DOUBLE:
-                        return CPrimitiveDataTypes.Double
-                    case tk.TokenKind.STRUCT:
-                        assert False, "Not implemented"
-                    case tk.TokenKind.UNION:
-                        assert False, "Not implemented"
-                    case tk.TokenKind.ENUM:
-                        assert False, "Not implemented"
-                    case tk.TokenKind.Identifier:
-                        assert False, "there is a need to check if the identifier is a typedef"
-                        assert False, "Not implemented"
-                    case _:
-                        self.fatal_token(self.current_token.index, "Invalid token type specifier", SyntaxError)
-            case 2:
-                match token_specifiers_list[0].kind:
-                    case tk.TokenKind.UNSIGNED:
-                        match token_specifiers_list[1].kind:
-                            case tk.TokenKind.SHORT:
-                                return CPrimitiveDataTypes.UShort
-                            case tk.TokenKind.CHAR:
-                                return CPrimitiveDataTypes.UChar
-                            case tk.TokenKind.INT:
-                                return CPrimitiveDataTypes.UInt
-                            case tk.TokenKind.LONG:
-                                return CPrimitiveDataTypes.ULong
-                            case _:
-                                self.fatal_token(token_specifiers_list[1].index, "Invalid token type specifier", SyntaxError)
-                    case tk.TokenKind.LONG:
-                        match token_specifiers_list[1].kind:
-                            case tk.TokenKind.LONG:
-                                return CPrimitiveDataTypes.LongLong
-                            case tk.TokenKind.INT:
-                                return CPrimitiveDataTypes.Int
-                            case tk.TokenKind.DOUBLE:
-                                return CPrimitiveDataTypes.LongDouble
-                            case _:
-                                self.fatal_token(token_specifiers_list[1].index, "Invalid token type specifier", SyntaxError)
-                    case _:
-                        self.fatal_token(token_specifiers_list[0].index, "Invalid token type specifier", SyntaxError)
-            case 3:
-                match token_specifiers_list[0].kind:
-                    case tk.TokenKind.UNSIGNED:
-                        match token_specifiers_list[1].kind:
-                            case tk.TokenKind.LONG:
-                                match token_specifiers_list[2].kind:
-                                    case tk.TokenKind.LONG:
-                                        return CPrimitiveDataTypes.ULongLong
-                                    case _:
-                                        self.fatal_token(token_specifiers_list[2].index, "Invalid token type specifier", SyntaxError)
-                            case _:
-                                self.fatal_token(token_specifiers_list[1].index, "Invalid token type specifier", SyntaxError)
-                    case tk.TokenKind.LONG:
-                        match token_specifiers_list[1].kind:
-                            case tk.TokenKind.LONG:
-                                match token_specifiers_list[2].kind:
-                                    case tk.TokenKind.INT:
-                                        return CPrimitiveDataTypes.LongLong
-                                    case _:
-                                        self.fatal_token(token_specifiers_list[2].index, "Invalid token type specifier", SyntaxError)
-                            case _:
-                                self.fatal_token(token_specifiers_list[1].index, "Invalid token type specifier", SyntaxError)
-                    case _:
-                        self.fatal_token(token_specifiers_list[0].index, "Invalid token type specifier", SyntaxError)
-
-    @staticmethod
-    def is_specifier_list_valid(specifier_list: list[tk.Token]) -> bool:
-        """check if a specifier list is valid"""
-        long_count: int = 0
-        signed_count: int = 0
-        unsigned_count: int = 0
-
-        for specifier in specifier_list:
-
-            match specifier.kind:
-                case tk.TokenKind.VOID:
-                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
-                case tk.TokenKind.UNSIGNED:
-                    unsigned_count += 1
-                    if signed_count != 0:
-                        return False
-                case tk.TokenKind.SIGNED:
-                    signed_count += 1
-                    if unsigned_count != 0:
-                        return False
-                case tk.TokenKind.SHORT:
-                    return long_count == 0
-                case tk.TokenKind.CHAR:
-                    return long_count == 0
-                case tk.TokenKind.INT:
-                    return long_count <= 2
-                case tk.TokenKind.LONG:
-                    long_count += 1
-                    if long_count > 2:
-                        return False
-                case tk.TokenKind.FLOAT:
-                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
-                case tk.TokenKind.DOUBLE:
-                    return long_count <= 1 and signed_count == 0 and unsigned_count == 0
-                case tk.TokenKind.STRUCT:
-                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
-                case tk.TokenKind.UNION:
-                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
-                case tk.TokenKind.ENUM:
-                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
-                case tk.TokenKind.Identifier:
-                    return long_count == 0 and signed_count == 0 and unsigned_count == 0
-
-        return False
+    def token_to_seperator_kind(self) -> CSpecifierKind:
+        if self.is_token_kind(tk.TokenKind.VOID):
+            return CSpecifierKind.Void
+        elif self.is_token_kind(tk.TokenKind.SHORT):
+            return CSpecifierKind.Short
+        elif self.is_token_kind(tk.TokenKind.CHAR):
+            return CSpecifierKind.Char
+        elif self.is_token_kind(tk.TokenKind.INT):
+            return CSpecifierKind.Int
+        elif self.is_token_kind(tk.TokenKind.LONG):
+            return CSpecifierKind.Long
+        elif self.is_token_kind(tk.TokenKind.FLOAT):
+            return CSpecifierKind.Float
+        elif self.is_token_kind(tk.TokenKind.DOUBLE):
+            return CSpecifierKind.Double
+        elif self.is_token_kind(tk.TokenKind.SIGNED):
+            return CSpecifierKind.Signed
+        elif self.is_token_kind(tk.TokenKind.UNSIGNED):
+            return CSpecifierKind.Unsigned
+        else:
+            return 0
 
     def is_abstract_declarator(self) -> bool:
         """check if the current token is an abstract declarator starter"""
-        return self.is_token_kind([tk.TokenKind.ASTERISK, tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
+        return self.is_token_kind(
+            [tk.TokenKind.ASTERISK, tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
 
     def is_direct_abstract_declarator(self) -> bool:
         """check if the current token is a direct abstract declarator starter"""
         return self.is_token_kind([tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
 
     def peek_token_type_qualifier(self) -> tk.Token:
-        self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token", eh.TypeQualifierNotFound)
+        self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token",
+                               eh.TypeQualifierNotFound)
         token: tk.Token = self.current_token
         self.peek_token()  # peek the token
         return token
@@ -256,7 +155,7 @@ class Parser:
                 tk.TokenKind.STRUCT,
                 tk.TokenKind.UNION,
                 tk.TokenKind.ENUM,
-                tk.TokenKind.Identifier
+                tk.TokenKind.IDENTIFIER
             ],
             "Expected a type specifier token",
             eh.TypeSpecifierNotFound
@@ -265,26 +164,75 @@ class Parser:
         self.peek_token()  # peek the token
         return token
 
-    def peek_specifier_qualifier_list(self) -> list[tk.Token]:
-        specifier_qualifier_list: list[tk.Token] = []
-        while True:
+    def peek_specifier_qualifier_list(self) -> CSpecifierType:
+        specifier_counter: CSpecifierKind = 0
+        qualifier_counter: CQualifierKind = 0
+        type: CSpecifierType = CPrimitiveDataTypes.Int
+
+        while self.is_token_type_specifier() or self.is_token_type_qualifier():
+            # handel qualifiers
+            # TODO: make a way that those qualifiers will be really used
             if self.is_token_type_qualifier():
-                type_qualifier: tk.Token = self.peek_token_type_qualifier()
-                specifier_qualifier_list.append(type_qualifier)
-            elif self.is_token_type_specifier():
-                type_specifier: tk.Token = self.peek_token_type_specifier()
-                specifier_qualifier_list.append(type_specifier)
-            else:
-                if len(specifier_qualifier_list) == 0:
-                    self.fatal_token(self.current_token.index, "Expected a type qualifier or a type specifier", eh.SpecifierQualifierListEmpty)
-                return specifier_qualifier_list
+                if self.is_token_kind(tk.TokenKind.CONST):
+                    qualifier_counter |= CQualifierKind.Const
+                elif self.is_token_kind(tk.TokenKind.VOLATILE):
+                    qualifier_counter |= CQualifierKind.Volatile
+
+            # handle struct, union, enum and typename identifier
+            # when parsing those specifiers the specifier count should be 0
+            if self.is_token_kind(tk.TokenKind.STRUCT) or \
+                    self.is_token_kind(tk.TokenKind.UNION) or \
+                    self.is_token_kind(tk.TokenKind.ENUM) or \
+                    self.is_token_kind(tk.TokenKind.IDENTIFIER):
+                if specifier_counter != 0:
+                    self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
+                                     eh.SpecifierQualifierListInvalid)
+
+                # TODO: implement and return the CSpecifierType
+                if self.is_token_kind(tk.TokenKind.STRUCT):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.UNION):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.ENUM):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
+                    assert False, "Not implemented"
+
+                current_specifier_kind: CSpecifierKind = self.token_to_seperator_kind()
+                if current_specifier_kind == CSpecifierKind.Signed or current_specifier_kind.Unsigned:
+                    specifier_counter |= current_specifier_kind
+                else:
+                    specifier_counter += current_specifier_kind
+
+                match specifier_counter:
+                    # char kinds
+                    case CSpecifierKind.Void:
+                        return CPrimitiveDataTypes.Void
+                    case CSpecifierKind.Char:
+                        return CPrimitiveDataTypes.Char
+                    case CSpecifierKind.Signed | CSpecifierKind.Char:
+                        return CPrimitiveDataTypes.Char
+                    case CSpecifierKind.Unsigned | CSpecifierKind.Char:
+                        return CPrimitiveDataTypes.UChar
+
+                    # short kinds
+                    case CSpecifierKind.Short:
+                        return CPrimitiveDataTypes.Short
+                    case CSpecifierKind.Short | CSpecifierKind.Int:
+                        return CPrimitiveDataTypes.Short
+                    case CSpecifierKind.Signed | CSpecifierKind.Short:
+                        return CPrimitiveDataTypes.Short
+                    case CSpecifierKind.Signed | CSpecifierKind.Short | CSpecifierKind.Int:
+                        return CPrimitiveDataTypes.Short
+
 
     def peek_type_name(self) -> CTypeName:
         specifier_qualifier_list: list[tk.Token] = self.peek_specifier_qualifier_list()
 
         specifier_list: list[tk.Token] = list(
             filter(
-                lambda s: s.kind != tk.TokenKind.SIGNED and s.kind != tk.TokenKind.CONST and s.kind != tk.TokenKind.VOLATILE,
+                lambda
+                    s: s.kind != tk.TokenKind.SIGNED and s.kind != tk.TokenKind.CONST and s.kind != tk.TokenKind.VOLATILE,
                 specifier_qualifier_list
             )
         )
@@ -330,8 +278,6 @@ class Parser:
             else:
                 abstract_declarator_copy.array_of = specifier
 
-
-
         return CTypeName(is_const, is_volatile, abstract_declarator if abstract_declarator is not None else specifier)
 
     def peek_parameter_type_list(self) -> list[CParameter]:
@@ -356,11 +302,13 @@ class Parser:
                     return CAbstractPointer(pointer_level, direct_abstract_declarator)
             else:
                 if pointer_level == 0:
-                    self.fatal_token(self.current_token.index, "Expected a abstract declarator", eh.DirectAbstractDeclaratorNotFound)
+                    self.fatal_token(self.current_token.index, "Expected a abstract declarator",
+                                     eh.DirectAbstractDeclaratorNotFound)
                 return CAbstractPointer(pointer_level, None)
 
     def peek_direct_abstract_declarator(self) -> AbstractType:
-        sub_direct_abstract_declarator: AbstractType | list[CParameter] = self.peek_direct_abstract_declarator_1_2_3_6_7()
+        sub_direct_abstract_declarator: AbstractType | list[
+            CParameter] = self.peek_direct_abstract_declarator_1_2_3_6_7()
         if self.is_direct_abstract_declarator():
             if isinstance(sub_direct_abstract_declarator, list):
                 #  TODO: need to raise an error
@@ -433,7 +381,7 @@ class Parser:
             string_: String = String(self.current_token.string)
             self.peek_token()  # peek string literal number
             return string_
-        elif self.is_token_kind(tk.TokenKind.Identifier):
+        elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
             identifier: Identifier = Identifier(self.current_token.string)
             self.peek_token()  # peek identifier literal number
             return identifier
@@ -442,7 +390,8 @@ class Parser:
 
             expression: Node = self.peek_expression()
 
-            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing curly brace", eh.TokenExpected)
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing curly brace",
+                                   eh.TokenExpected)
 
             self.peek_token()  # peek closing parenthesis token
 
@@ -540,7 +489,8 @@ class Parser:
                 unary_expression: Node = self.peek_unary_expression()
                 return unary_expression
 
-            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing parenthesis", eh.TokenExpected)
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing parenthesis",
+                                   eh.TokenExpected)
 
             self.peek_token()  # peek ) token
 
@@ -589,14 +539,16 @@ class Parser:
 
                 sub_multiplicative_expression: Node = self.peek_multiplicative_expression()
 
-                multiplicative_expression = CBinaryOp(CBinaryOpKind.Addition, multiplicative_expression, sub_multiplicative_expression)
+                multiplicative_expression = CBinaryOp(CBinaryOpKind.Addition, multiplicative_expression,
+                                                      sub_multiplicative_expression)
 
             elif self.is_token_kind(tk.TokenKind.HYPHEN):
                 self.peek_token()  # peek the - token
 
                 sub_multiplicative_expression: Node = self.peek_multiplicative_expression()
 
-                multiplicative_expression = CBinaryOp(CBinaryOpKind.Subtraction, multiplicative_expression, sub_multiplicative_expression)
+                multiplicative_expression = CBinaryOp(CBinaryOpKind.Subtraction, multiplicative_expression,
+                                                      sub_multiplicative_expression)
             else:
                 return multiplicative_expression
 
@@ -665,14 +617,16 @@ class Parser:
 
                 sub_relational_expression: Node = self.peek_relational_expression()
 
-                relational_expression = CBinaryOp(CBinaryOpKind.EqualTo, relational_expression, sub_relational_expression)
+                relational_expression = CBinaryOp(CBinaryOpKind.EqualTo, relational_expression,
+                                                  sub_relational_expression)
 
             elif self.is_token_kind(tk.TokenKind.NE_OP):
                 self.peek_token()  # peek the != token
 
                 sub_relational_expression: Node = self.peek_relational_expression()
 
-                relational_expression = CBinaryOp(CBinaryOpKind.NotEqualTo, relational_expression, sub_relational_expression)
+                relational_expression = CBinaryOp(CBinaryOpKind.NotEqualTo, relational_expression,
+                                                  sub_relational_expression)
 
             else:
                 return relational_expression
@@ -709,7 +663,8 @@ class Parser:
 
             sub_exclusive_or_expression: Node = self.peek_exclusive_or_expression()
 
-            exclusive_or_expression = CBinaryOp(CBinaryOpKind.BitwiseOR, exclusive_or_expression, sub_exclusive_or_expression)
+            exclusive_or_expression = CBinaryOp(CBinaryOpKind.BitwiseOR, exclusive_or_expression,
+                                                sub_exclusive_or_expression)
 
         return exclusive_or_expression
 
@@ -722,7 +677,8 @@ class Parser:
 
                 sub_inclusive_or_expression: Node = self.peek_inclusive_or_expression()
 
-                inclusive_or_expression = CBinaryOp(CBinaryOpKind.LogicalAND, inclusive_or_expression, sub_inclusive_or_expression)
+                inclusive_or_expression = CBinaryOp(CBinaryOpKind.LogicalAND, inclusive_or_expression,
+                                                    sub_inclusive_or_expression)
             else:
                 return inclusive_or_expression
 
@@ -734,7 +690,8 @@ class Parser:
 
             sub_logical_and_expression: Node = self.peek_logical_and_expression()
 
-            logical_and_expression = CBinaryOp(CBinaryOpKind.LogicalOR, logical_and_expression, sub_logical_and_expression)
+            logical_and_expression = CBinaryOp(CBinaryOpKind.LogicalOR, logical_and_expression,
+                                               sub_logical_and_expression)
 
         return logical_and_expression
 
@@ -770,16 +727,16 @@ class Parser:
 
     def is_assignment_operator(self) -> bool:
         return self.is_token_kind(tk.TokenKind.EQUALS) or \
-               self.is_token_kind(tk.TokenKind.MUL_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.DIV_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.MOD_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.ADD_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.SUB_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.LEFT_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.RIGHT_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.AND_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.XOR_ASSIGN) or \
-               self.is_token_kind(tk.TokenKind.OR_ASSIGN)
+            self.is_token_kind(tk.TokenKind.MUL_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.DIV_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.MOD_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.ADD_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.SUB_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.LEFT_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.RIGHT_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.AND_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.XOR_ASSIGN) or \
+            self.is_token_kind(tk.TokenKind.OR_ASSIGN)
 
     def get_binary_assignment_op_kind_(self) -> CBinaryOpKind:
         if self.is_token_kind(tk.TokenKind.EQUALS):
@@ -831,7 +788,7 @@ class Parser:
         return conditional_expression
 
     def peek_enumerator(self, enum: CEnum) -> CEnumMember:
-        self.expect_token_kind(tk.TokenKind.Identifier, "Expecting an identifier")
+        self.expect_token_kind(tk.TokenKind.IDENTIFIER, "Expecting an identifier")
 
         enum.current_member_value += 1
         name: str = self.current_token.string
@@ -878,7 +835,7 @@ class Parser:
 
         name: str = ""
 
-        if self.is_token_kind(tk.TokenKind.Identifier):
+        if self.is_token_kind(tk.TokenKind.IDENTIFIER):
             name = self.current_token.string
 
             self.peek_token()  # peek the identifier token

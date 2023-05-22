@@ -8,6 +8,18 @@ class CTypeQualifier(enum.Enum):
     Volatile = enum.auto()
 
 
+class CSpecifierKind(enum.Flag):
+    Void = enum.auto()
+    Short = enum.auto()
+    Char = enum.auto()
+    Int = enum.auto()
+    Long = enum.auto()
+    float = enum.auto()
+    Double = enum.auto()
+    Signed = enum.auto()
+    Unsigned = enum.auto()
+
+
 class CPrimitiveDataTypes(enum.Enum):
     Void = enum.auto()
     Short = enum.auto()
@@ -431,6 +443,7 @@ class FunctionCall:
         return str_
 
 
-Node = Union[Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, CAbstractArray, CAbstractFunction, CFunction, CAbstractArray, CParameter]
+Node = Union[
+    Block, CEnum, CEnumMember, Variable, Number, String, Identifier, CTernaryOp, CBinaryOp, CUnaryOp, CCast, FunctionCall, CAbstractPointer, CAbstractArray, CAbstractFunction, CFunction, CAbstractArray, CParameter]
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
 AbstractType = Union[CAbstractFunction, CAbstractPointer, CAbstractArray]

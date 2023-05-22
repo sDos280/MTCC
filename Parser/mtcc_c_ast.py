@@ -8,16 +8,16 @@ class CQualifierKind(enum.Flag):
     Volatile = enum.auto()
 
 
-class CSpecifierKind(enum.Flag):
-    Void = enum.auto()
-    Short = enum.auto()
-    Char = enum.auto()
-    Int = enum.auto()
-    Long = enum.auto()
-    Float = enum.auto()
-    Double = enum.auto()
-    Signed = enum.auto()
-    Unsigned = enum.auto()
+class CSpecifierKind(enum.IntFlag):
+    Void = 1 << 0
+    Short = 1 << 2
+    Char = 1 << 4
+    Int = 1 << 8
+    Long = 1 << 10
+    Float = 1 << 12
+    Double = 1 << 14
+    Signed = 1 << 15
+    Unsigned = 1 << 16
 
 
 class CPrimitiveDataTypes(enum.Enum):

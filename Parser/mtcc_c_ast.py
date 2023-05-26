@@ -348,16 +348,10 @@ class CAbstractArray:
         self.array_of: AbstractType = array_of
 
     def get_child_bottom(self) -> AbstractType:
-        if self.array_of is None:
-            return None
-        elif isinstance(self.array_of, CFunction):
-            return self.array_of
-        else:
-            temp = self.array_of.get_child_bottom()
-            if temp is None:
-                return self.array_of
-            else:
-                return self.array_of.get_child_bottom()
+        try:
+            return self.child.get_child_bottom()
+        except AttributeError:
+            return self.child
 
     @property
     def child(self) -> AbstractType:
@@ -385,16 +379,10 @@ class CAbstractPointer:
         self.pointer_of: AbstractType = pointer_of
 
     def get_child_bottom(self) -> AbstractType:
-        if self.pointer_of is None:
-            return None
-        elif isinstance(self.pointer_of, CAbstractFunction):
-            return self.pointer_of
-        else:
-            temp = self.pointer_of.get_child_bottom()
-            if temp is None:
-                return self.pointer_of
-            else:
-                return self.pointer_of.get_child_bottom()
+        try:
+            return self.child.get_child_bottom()
+        except AttributeError:
+            return self.child
 
     @property
     def child(self) -> AbstractType:
@@ -408,25 +396,7 @@ class CAbstractPointer:
         return self
 
     def __str__(self):
-        return f"{self.pointer_of if self.pointer_of is not None else ''}{'*' * self.pointer_level if not isinstance(self.pointer_of, CAbstractFunction) else ''}"
-
-
-class CAbstractFunction:
-    def __init__(self, parameters: list[CParameter], return_type: CTypeName):
-        self.parameters: list[CParameter] = parameters
-        self.return_type: CTypeName = return_type
-
-    def __str__(self):
-        str_ = f"{self.return_type} "
-        str_ += f"(*)("
-        if len(self.parameters) != 0:
-            for parameter in self.parameters:
-                str_ += f"{parameter}, "
-            str_ = str_[0:-2]
-
-        str_ += ")"
-
-        return str_
+        return f"{self.pointer_of if self.pointer_of is not None else ''}{'*' * self.pointer_level if not isinstance(self.pointer_of, CFunction) else ''}"
 
 
 class CFunction:
@@ -479,10 +449,10 @@ Node = Union[
     FunctionCall,
     CAbstractPointer,
     CAbstractArray,
-    CAbstractFunction,
+    CFunction,
     CFunction,
     CAbstractArray,
     CParameter
 ]
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
-AbstractType = Union[CAbstractFunction, CAbstractPointer, CAbstractArray]
+AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray]

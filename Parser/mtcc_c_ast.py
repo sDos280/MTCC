@@ -359,35 +359,56 @@ class CAbstractArray:
             else:
                 return self.array_of.get_child_bottom()
 
+    @property
+    def child(self) -> AbstractType:
+        return self.array_of
+
+    @child.setter
+    def child(self, value: AbstractType):
+        self.array_of = value
+
     def copy(self):
         return CAbstractArray(self.size, self.array_of)
 
     def __str__(self):
-        return f"{self.array_of}[{self.size if not (self.size is not None or self.size == 0) else ''}]"
+        if self.array_of is None:
+            return f"{self.array_of}[{self.size if self.size is not None else ''}]"
+        elif isinstance(self.array_of, CAbstractArray):
+            return f"{self.array_of}[{self.size if self.size is not None else ''}][{self.array_of.size}]"
+        else:
+            return f"{self.array_of}[{self.size if self.size is not None else ''}]"
 
 
 class CAbstractPointer:
-    def __init__(self, pointer_level: int, pointer_to: AbstractType):
+    def __init__(self, pointer_level: int, pointer_of: AbstractType):
         self.pointer_level: int = pointer_level
-        self.pointer_to: AbstractType = pointer_to
+        self.pointer_of: AbstractType = pointer_of
 
     def get_child_bottom(self) -> AbstractType:
-        if self.pointer_to is None:
+        if self.pointer_of is None:
             return None
-        elif isinstance(self.pointer_to, CAbstractFunction):
-            return self.pointer_to
+        elif isinstance(self.pointer_of, CAbstractFunction):
+            return self.pointer_of
         else:
-            temp = self.pointer_to.get_child_bottom()
+            temp = self.pointer_of.get_child_bottom()
             if temp is None:
-                return self.pointer_to
+                return self.pointer_of
             else:
-                return self.pointer_to.get_child_bottom()
+                return self.pointer_of.get_child_bottom()
+
+    @property
+    def child(self) -> AbstractType:
+        return self.pointer_of
+
+    @child.setter
+    def child(self, value: AbstractType):
+        self.pointer_of = value
 
     def copy(self):
         return self
 
     def __str__(self):
-        return f"{self.pointer_to if self.pointer_to is not None else ''}{'*' * self.pointer_level if not isinstance(self.pointer_to, CAbstractFunction) else ''}"
+        return f"{self.pointer_of if self.pointer_of is not None else ''}{'*' * self.pointer_level if not isinstance(self.pointer_of, CAbstractFunction) else ''}"
 
 
 class CAbstractFunction:

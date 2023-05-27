@@ -345,7 +345,7 @@ class CParameter:
 class CAbstractArray:
     def __init__(self, size: Node, array_of: AbstractType):
         self.size: Node = size
-        self.array_of: AbstractType = array_of
+        self.__array_of: AbstractType = array_of
 
     def get_child_bottom(self) -> AbstractType:
         try:
@@ -353,30 +353,42 @@ class CAbstractArray:
         except AttributeError:
             return self.child
 
+    def get_child_bottom_not_none(self) -> AbstractType:
+        try:
+            return self.child.get_child_bottom_not_none()
+        except AttributeError:
+            return self.child if self.child is not None else self
+
     @property
     def child(self) -> AbstractType:
-        return self.array_of
+        return self.__array_of
 
     @child.setter
     def child(self, value: AbstractType):
-        self.array_of = value
+        self.__array_of = value
 
     def copy(self):
-        return CAbstractArray(self.size, self.array_of)
+        return CAbstractArray(self.size, self.__array_of)
+
+    def __str__size(self):
+        if isinstance(self.child, CAbstractArray):
+            return f"[{self.size}]{self.child.__str__size()}"
+        else:
+            return f"[{self.size}]"
 
     def __str__(self):
-        if self.array_of is None:
-            return f"{self.array_of}[{self.size if self.size is not None else ''}]"
-        elif isinstance(self.array_of, CAbstractArray):
-            return f"{self.array_of}[{self.size if self.size is not None else ''}][{self.array_of.size}]"
+        if isinstance(self.child, CAbstractArray):
+            return f"{self.get_child_bottom()}[{self.size}]{self.child.__str__size()}"
+        # elif isinstance(self.child, CAbstractPointer):
+        #     return f"{self.child}[{self.size}]"
         else:
-            return f"{self.array_of}[{self.size if self.size is not None else ''}]"
+            return f"{self.child}[{self.size}]"
 
 
 class CAbstractPointer:
     def __init__(self, pointer_level: int, pointer_of: AbstractType):
         self.pointer_level: int = pointer_level
-        self.pointer_of: AbstractType = pointer_of
+        self.__pointer_of: AbstractType = pointer_of
 
     def get_child_bottom(self) -> AbstractType:
         try:
@@ -384,19 +396,25 @@ class CAbstractPointer:
         except AttributeError:
             return self.child
 
+    def get_child_bottom_not_none(self) -> AbstractType:
+        try:
+            return self.child.get_child_bottom_not_none()
+        except AttributeError:
+            return self.child if self.child is not None else self
+
     @property
     def child(self) -> AbstractType:
-        return self.pointer_of
+        return self.__pointer_of
 
     @child.setter
     def child(self, value: AbstractType):
-        self.pointer_of = value
+        self.__pointer_of = value
 
     def copy(self):
         return self
 
     def __str__(self):
-        return f"{self.pointer_of if self.pointer_of is not None else ''}{'*' * self.pointer_level if not isinstance(self.pointer_of, CFunction) else ''}"
+        return f"{self.__pointer_of if self.__pointer_of is not None else ''}{'*' * self.pointer_level if not isinstance(self.__pointer_of, CFunction) else ''}"
 
 
 class CFunction:
@@ -449,7 +467,6 @@ Node = Union[
     FunctionCall,
     CAbstractPointer,
     CAbstractArray,
-    CFunction,
     CFunction,
     CAbstractArray,
     CParameter

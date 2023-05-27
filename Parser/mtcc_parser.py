@@ -276,25 +276,20 @@ class Parser:
         abstract_declarator: AbstractType = None
         if self.is_abstract_declarator():
             abstract_declarator: AbstractType = self.peek_abstract_declarator()
-            abstract_declarator_copy = abstract_declarator.copy()
-            abstract_declarator_bottom = abstract_declarator.get_child_bottom()
+            abstract_declarator_bottom: AbstractType = abstract_declarator.get_child_bottom()
 
-            if isinstance(abstract_declarator_bottom, CAbstractPointer):
-                abstract_declarator_bottom.pointer_to = abstract_declarator
+            if isinstance(abstract_declarator_bottom, CAbstractPointer) or \
+                    isinstance(abstract_declarator_bottom, CAbstractArray):
+                abstract_declarator_bottom.child = specified_qualifier
+            elif isinstance(abstract_declarator_bottom, CFunction):
+                if isinstance(abstract_declarator_bottom.return_type, CAbstractPointer) or \
+                        isinstance(abstract_declarator_bottom.return_type, CAbstractArray):
+                    abstract_declarator_bottom.return_type.child = specified_qualifier
             else:
-                abstract_declarator_bottom.array_of = abstract_declarator
+                assert False, "how did you got here?"
 
-            if isinstance(abstract_declarator, CAbstractPointer):
-                abstract_declarator = abstract_declarator.pointer_to
-            else:
-                abstract_declarator = abstract_declarator.array_of
 
-            if isinstance(abstract_declarator_copy, CAbstractPointer):
-                abstract_declarator_copy.pointer_to = specified_qualifier
-            else:
-                abstract_declarator_copy.array_of = specified_qualifier
-
-        return CTypeName(False, False, abstract_declarator if abstract_declarator is not None else specifier)
+        return CTypeName(False, False, abstract_declarator if abstract_declarator is not None else specified_qualifier)
 
     def peek_parameter_type_list(self) -> list[CParameter]:
         if self.is_abstract_declarator():
@@ -315,7 +310,16 @@ class Parser:
                     return direct_abstract_declarator
                 else:
                     direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
-                    return CAbstractPointer(pointer_level, direct_abstract_declarator)
+                    direct_abstract_declarator_bottom: AbstractType = direct_abstract_declarator.get_child_bottom()
+                    if isinstance(direct_abstract_declarator_bottom, CAbstractPointer) or \
+                            isinstance(direct_abstract_declarator_bottom, CAbstractArray):
+                        direct_abstract_declarator_bottom.child = CAbstractPointer(pointer_level, None)
+                    elif isinstance(direct_abstract_declarator_bottom, CFunction):
+                        direct_abstract_declarator_bottom.return_type = CAbstractPointer(pointer_level, None)
+                    else:
+                        assert False, "how did you got here?"
+
+                    return direct_abstract_declarator
             else:
                 if pointer_level == 0:
                     self.fatal_token(self.current_token.index, "Expected a abstract declarator",
@@ -323,21 +327,28 @@ class Parser:
                 return CAbstractPointer(pointer_level, None)
 
     def peek_direct_abstract_declarator(self) -> AbstractType:
-        sub_direct_abstract_declarator: AbstractType | list[
-            CParameter] = self.peek_direct_abstract_declarator_1_2_3_6_7()
-        if self.is_direct_abstract_declarator():
-            if isinstance(sub_direct_abstract_declarator, list):
-                #  TODO: need to raise an error
-                pass
-            elif isinstance(sub_direct_abstract_declarator, CAbstractPointer):
-                sub_sub_direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
-                sub_direct_abstract_declarator.pointer_to = sub_sub_direct_abstract_declarator
-            elif isinstance(sub_direct_abstract_declarator, CAbstractArray):
-                sub_sub_direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
-                sub_direct_abstract_declarator.array_of = sub_sub_direct_abstract_declarator
-            elif isinstance(sub_direct_abstract_declarator, CAbstractFunction):
-                assert False, "Not implemented"
-        return sub_direct_abstract_declarator
+        # return the top and bottom of the direct abstract declarator
+        direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
+        while True:
+            if self.is_abstract_declarator():
+                current_index: int = self.current_token.index
+                next_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
+                if isinstance(next_abstract_declarator, CAbstractArray):  # abstract_declarator [...]
+                    # get bottom of the direct_abstract_declarator_top
+                    direct_abstract_declarator_bottom: AbstractType = direct_abstract_declarator.get_child_bottom_not_none()
+                    # set the child of the bottom to the next_abstract_declarator
+                    direct_abstract_declarator_bottom.child = next_abstract_declarator
+                elif isinstance(next_abstract_declarator, list):  # abstract_declarator (parameter_type_list)
+                    # check for an abstract pointer to function
+                    bottom_abstract_declarator: AbstractType = direct_abstract_declarator.get_child_bottom_not_none()
+                    if isinstance(bottom_abstract_declarator, CAbstractPointer) or isinstance(bottom_abstract_declarator, CAbstractArray):
+                        bottom_abstract_declarator.child = CFunction("", next_abstract_declarator, None)
+                    else:
+                        self.fatal_token(current_index, "Expected a abstract pointer or array")
+
+
+            else:
+                return direct_abstract_declarator
 
     def peek_direct_abstract_declarator_1_2_3_6_7(self) -> AbstractType | list[CParameter]:
         """
@@ -744,16 +755,16 @@ class Parser:
 
     def is_assignment_operator(self) -> bool:
         return self.is_token_kind(tk.TokenKind.EQUALS) or \
-            self.is_token_kind(tk.TokenKind.MUL_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.DIV_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.MOD_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.ADD_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.SUB_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.LEFT_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.RIGHT_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.AND_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.XOR_ASSIGN) or \
-            self.is_token_kind(tk.TokenKind.OR_ASSIGN)
+               self.is_token_kind(tk.TokenKind.MUL_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.DIV_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.MOD_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.ADD_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.SUB_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.LEFT_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.RIGHT_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.AND_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.XOR_ASSIGN) or \
+               self.is_token_kind(tk.TokenKind.OR_ASSIGN)
 
     def get_binary_assignment_op_kind_(self) -> CBinaryOpKind:
         if self.is_token_kind(tk.TokenKind.EQUALS):

@@ -3,6 +3,7 @@ from __future__ import annotations
 import Parser.mtcc_error_handler as eh
 import Parser.mtcc_token as tk
 from Parser.mtcc_c_ast import *
+import json
 
 
 class Parser:
@@ -90,18 +91,6 @@ class Parser:
         if not self.is_token_kind(kind):
             self.fatal_token(self.index, error_string, raise_exception)
 
-    def is_variable_in_block(self, variable: Variable) -> bool:
-        if self.current_block is None:  # we are on the top level block
-            for var in self.variables:
-                if variable.name == var.name:
-                    return True
-        else:
-            for var in self.current_block.variables:
-                if variable.name == var.name:
-                    return True
-
-        return False
-
     def token_to_seperator_kind(self) -> CSpecifierKind:
         if self.is_token_kind(tk.TokenKind.VOID):
             return CSpecifierKind.Void
@@ -122,7 +111,7 @@ class Parser:
         elif self.is_token_kind(tk.TokenKind.UNSIGNED):
             return CSpecifierKind.Unsigned
         else:
-            return 0
+            return CSpecifierKind(0)
 
     def is_abstract_declarator(self) -> bool:
         """check if the current token is an abstract declarator starter"""
@@ -310,7 +299,7 @@ class Parser:
             if self.is_direct_abstract_declarator():
                 direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
                 if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFuncion
-                    direct_abstract_declarator.get_child_bottom().child = CFunction("", direct_abstract_declarator_module, None)
+                    direct_abstract_declarator.get_child_bottom().child = CFunction(None, direct_abstract_declarator_module, None)
                 else:
                     direct_abstract_declarator.get_child_bottom().child = direct_abstract_declarator_module
             else:
@@ -371,11 +360,11 @@ class Parser:
             self.peek_token()  # peek float literal number
             return number
         elif self.is_token_kind(tk.TokenKind.STRING_LITERAL):
-            string_: String = String(self.current_token.string)
+            string_: CString = CString(self.current_token.string)
             self.peek_token()  # peek string literal number
             return string_
         elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
-            identifier: Identifier = Identifier(self.current_token.string)
+            identifier: CIdentifier = CIdentifier(self.current_token)
             self.peek_token()  # peek identifier literal number
             return identifier
         elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
@@ -395,7 +384,7 @@ class Parser:
     def peek_postfix_expression(self) -> Node:
         primary_expression: Node = self.peek_primary_expression()
 
-        if not isinstance(primary_expression, Identifier):
+        if not isinstance(primary_expression, CIdentifier):
             return primary_expression
 
         if self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
@@ -858,7 +847,7 @@ class Parser:
 
         expression = self.peek_expression()
 
-        print(expression)
+        print(json.dumps(expression.to_dict(), indent=2))
         """while not (self.current_token is None or self.is_token_kind(tk.TokenKind.END)):
             statement = None
 

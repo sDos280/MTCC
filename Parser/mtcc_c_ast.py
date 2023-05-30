@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Union
 import enum
+import Parser.mtcc_token as tk
 
 
 class CQualifierKind(enum.Flag):
@@ -35,6 +36,12 @@ class CPrimitiveDataTypes(enum.Enum):
     Float = enum.auto()
     Double = enum.auto()
     LongDouble = enum.auto()
+
+    def to_dict(self):
+        return {
+            "node": "CPrimitiveDataTypes",
+            "value": str(self)
+        }
 
     def __str__(self):
         if self == CPrimitiveDataTypes.Void:
@@ -84,6 +91,14 @@ class CTypeName:
         self.is_const: bool = is_const
         self.is_volatile: bool = is_volatile
         self.type: CSpecifierType | AbstractType = type
+
+    def to_dict(self):
+        return {
+            "node": "CTypeName",
+            "is_const": self.is_const,
+            "is_volatile": self.is_volatile,
+            "type": self.type.to_dict()
+        }
 
     def __str__(self):
         str_: str = ""
@@ -135,6 +150,14 @@ class CBinaryOp:
         self.kind: CBinaryOpKind = kind
         self.left: Node = left
         self.right: Node = right
+
+    def to_dict(self):
+        return {
+            "node": "CBinaryOp",
+            "kind": self.kind.name,
+            "left": self.left.to_dict(),
+            "right": self.right.to_dict()
+        }
 
     def __str__(self):
         str_: str = "("
@@ -210,6 +233,13 @@ class CUnaryOp:
         self.kind: CUnaryOpKind = kind
         self.expression: Node = expression
 
+    def to_dict(self):
+        return {
+            "node": "CUnaryOp",
+            "kind": self.kind.name,
+            "expression": self.expression.to_dict()
+        }
+
     def __str__(self):
         str_: str = "("
 
@@ -254,6 +284,14 @@ class CTernaryOp:
         self.true_value: Node = true_value
         self.false_value: Node = false_value
 
+    def to_dict(self):
+        return {
+            "node": "CTernaryOp",
+            "condition": self.condition.to_dict(),
+            "true_value": self.true_value.to_dict(),
+            "false_value": self.false_value.to_dict()
+        }
+
     def __str__(self):
         return f"{self.condition} ? {self.true_value} : {self.false_value}"
 
@@ -263,17 +301,31 @@ class CCast:
         self.cast_to: CTypeName = cast_to
         self.cast_expression: Node = cast_expression
 
+    def to_dict(self):
+        return {
+            "node": "CCast",
+            "cast_to": self.cast_to.to_dict(),
+            "cast_expression": self.cast_expression.to_dict()
+        }
+
     def __str__(self):
         return f"({self.cast_to}){self.cast_expression}"
 
 
 class CEnumMember:
-    def __init__(self, name: str, value: Node):
-        self.name: str = name
+    def __init__(self, identifier: CIdentifier, value: Node):
+        self.identifier: CIdentifier = identifier
         self.value: Node = value
 
+    def to_dict(self):
+        return {
+            "node": "CEnumMember",
+            "name": self.identifier,
+            "value": self.value.to_dict()
+        }
+
     def __str__(self) -> str:
-        return f"{self.name} = {self.value}"
+        return f"{self.identifier} = {self.value}"
 
 
 class CEnum:
@@ -282,6 +334,13 @@ class CEnum:
         self.members: list[CEnumMember] = members
         self.current_member_value: int = 0
 
+    def to_dict(self):
+        return {
+            "node": "CEnum",
+            "name": self.name,
+            "members": [member.to_dict() for member in self.members]
+        }
+
     def __str__(self):
         member_strings = [str(member) for member in self.members]
         members_str = ",\n".join(member_strings)
@@ -289,39 +348,65 @@ class CEnum:
 
 
 class Number:
-
     def __init__(self, value: int | float):
         self.value: int | float = value
+
+    def to_dict(self):
+        return {
+            "node": "Number",
+            "value": self.value
+        }
 
     def __str__(self):
         return str(self.value)
 
 
-class String:
-    """String Literal"""
+class CString:
 
     def __init__(self, contain: str):
         self.contain: str = contain
+
+    def to_dict(self):
+        return {
+            "node": "CString",
+            "contain": self.contain
+        }
 
     def __str__(self):
         return self.contain
 
 
-class Identifier:
-    def __init__(self, name: str):
-        self.name: str = name
+class CIdentifier:
+    def __init__(self, token: tk.Token | None):
+        self.token: tk.Token | None = token
+
+    def to_dict(self):
+        return {
+            "node": "CIdentifier",
+            "token": self.token.string
+        } if self.token is not None else {
+            "node": "CIdentifier",
+            "token": None
+        }
 
     def __str__(self):
-        return self.name
+        return self.token.string if self.token is not None else ""
 
 
 class Variable:
-    def __init__(self, name: str, type):
-        self.name: str = name
+    def __init__(self, identifier: CIdentifier, type):
+        self.identifier: CIdentifier = identifier
         self.type = type
 
+    def to_dict(self):
+        return {
+            "node": "Variable",
+            "name": self.identifier,
+            "type": self.type.to_dict()
+        }
+
     def __str__(self):
-        return f"{self.type} {self.name};"
+        return f"{self.type} {self.identifier};"
 
 
 class Block:
@@ -329,23 +414,44 @@ class Block:
         self.statements: list[Node] = []
         self.variables: list[Variable] = []  # variables declension list
 
+    def to_dict(self):
+        return {
+            "node": "Block",
+            "statements": [statement.to_dict() for statement in self.statements],
+            "variables": [variable.to_dict() for variable in self.variables]
+        }
+
     def __str__(self):
         return "{" + ";".join(str(s) for s in self.statements) + "}"
 
 
 class CParameter:
-    def __init__(self, name: str, type: CTypeName):
-        self.name: str = name
+    def __init__(self, identifier: CIdentifier, type: CTypeName):
+        self.identifier: CIdentifier = identifier
         self.type: CTypeName = type
 
+    def to_dict(self):
+        return {
+            "node": "CParameter",
+            "name": self.identifier,
+            "type": self.type.to_dict()
+        }
+
     def __str__(self):
-        return f"{self.type} {self.name}"
+        return f"{self.type} {self.identifier}"
 
 
 class CAbstractArray:
     def __init__(self, size: Node, array_of: AbstractType):
         self.size: Node = size
         self.__array_of: AbstractType = array_of
+
+    def to_dict(self):
+        return {
+            "node": "CAbstractArray",
+            "size": self.size.to_dict(),
+            "array_of": self.__array_of.to_dict()
+        }
 
     def get_child_bottom(self) -> AbstractType:
         try:
@@ -390,6 +496,13 @@ class CAbstractPointer:
         self.pointer_level: int = pointer_level
         self.__pointer_of: AbstractType = pointer_of
 
+    def to_dict(self):
+        return {
+            "node": "CAbstractPointer",
+            "pointer_level": self.pointer_level,
+            "pointer_of": self.__pointer_of.to_dict()
+        }
+
     def get_child_bottom(self) -> AbstractType:
         try:
             return self.child.get_child_bottom()
@@ -412,14 +525,22 @@ class CAbstractPointer:
 
 
 class CFunction:
-    def __init__(self, name: str, parameters: list[CParameter], return_type: CType):
-        self.name: str = name
+    def __init__(self, identifier: CIdentifier | None, parameters: list[CParameter], return_type: CType):
+        self.identifier: CIdentifier = identifier
         self.parameters: list[CParameter] = parameters
         self.return_type: CType = return_type
 
+    def to_dict(self):
+        return {
+            "node": "CFunction",
+            "name": self.identifier,
+            "parameters": [parameter.to_dict() for parameter in self.parameters],
+            "return_type": self.return_type.to_dict()
+        }
+
     def __str__(self):
         str_ = f"{self.return_type} "
-        str_ += f"{self.name}("
+        str_ += f"{self.identifier}("
         if len(self.parameters) != 0:
             for parameter in self.parameters:
                 str_ += f"{parameter}, "
@@ -450,7 +571,7 @@ class FunctionCall:
         self.parameters_type: list = parameters_type
 
     def __str__(self):
-        str_ = f"{self.function.name}("
+        str_ = f"{self.function.identifier.token.string}("
         for parameter in self.parameters_type:
             str_ += f"{parameter}, "
 
@@ -466,8 +587,8 @@ Node = Union[
     CEnumMember,
     Variable,
     Number,
-    String,
-    Identifier,
+    CString,
+    CIdentifier,
     CTernaryOp,
     CBinaryOp,
     CUnaryOp,

@@ -45,7 +45,7 @@ class TokenKind(enum.Enum):
     FLOAT_LITERAL = enum.auto()
     STRING_LITERAL = enum.auto()
 
-    # Identifier
+    # CIdentifier
     IDENTIFIER = enum.auto()
 
     # Separators and Operators

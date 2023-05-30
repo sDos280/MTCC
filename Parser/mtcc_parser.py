@@ -276,18 +276,7 @@ class Parser:
         abstract_declarator: AbstractType = None
         if self.is_abstract_declarator():
             abstract_declarator: AbstractType = self.peek_abstract_declarator()
-            abstract_declarator_bottom: AbstractType = abstract_declarator.get_child_bottom()
-
-            if isinstance(abstract_declarator_bottom, CAbstractPointer) or \
-                    isinstance(abstract_declarator_bottom, CAbstractArray):
-                abstract_declarator_bottom.child = specified_qualifier
-            elif isinstance(abstract_declarator_bottom, CFunction):
-                if isinstance(abstract_declarator_bottom.return_type, CAbstractPointer) or \
-                        isinstance(abstract_declarator_bottom.return_type, CAbstractArray):
-                    abstract_declarator_bottom.return_type.child = specified_qualifier
-            else:
-                assert False, "how did you got here?"
-
+            abstract_declarator.get_child_bottom().child = specified_qualifier
 
         return CTypeName(False, False, abstract_declarator if abstract_declarator is not None else specified_qualifier)
 
@@ -298,61 +287,38 @@ class Parser:
             return list[CParameter]()
 
     def peek_abstract_declarator(self) -> AbstractType:
-        pointer_level: int = 0
-        while True:
-            if self.is_token_kind(tk.TokenKind.ASTERISK):
+        if self.is_direct_abstract_declarator():
+            return self.peek_direct_abstract_declarator()
+        elif self.is_token_kind(tk.TokenKind.ASTERISK):
+            pointer_level: int = 0
+            while self.is_token_kind(tk.TokenKind.ASTERISK):
                 self.peek_token()  # peek * token
                 pointer_level += 1
 
-            elif self.is_direct_abstract_declarator():
-                if pointer_level == 0:
-                    direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
-                    return direct_abstract_declarator
-                else:
-                    direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
-                    direct_abstract_declarator_bottom: AbstractType = direct_abstract_declarator.get_child_bottom()
-                    if isinstance(direct_abstract_declarator_bottom, CAbstractPointer) or \
-                            isinstance(direct_abstract_declarator_bottom, CAbstractArray):
-                        direct_abstract_declarator_bottom.child = CAbstractPointer(pointer_level, None)
-                    elif isinstance(direct_abstract_declarator_bottom, CFunction):
-                        direct_abstract_declarator_bottom.return_type = CAbstractPointer(pointer_level, None)
-                    else:
-                        assert False, "how did you got here?"
-
-                    return direct_abstract_declarator
+            if self.is_direct_abstract_declarator():
+                direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
+                direct_abstract_declarator.get_child_bottom().child = CAbstractPointer(pointer_level, None)
+                return direct_abstract_declarator
             else:
-                if pointer_level == 0:
-                    self.fatal_token(self.current_token.index, "Expected a abstract declarator",
-                                     eh.DirectAbstractDeclaratorNotFound)
                 return CAbstractPointer(pointer_level, None)
 
     def peek_direct_abstract_declarator(self) -> AbstractType:
         # return the top and bottom of the direct abstract declarator
-        direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
+        direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
+        direct_abstract_declarator: AbstractType = direct_abstract_declarator_module
         while True:
-            if self.is_abstract_declarator():
-                current_index: int = self.current_token.index
-                next_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator_1_2_3_6_7()
-                if isinstance(next_abstract_declarator, CAbstractArray):  # abstract_declarator [...]
-                    # get bottom of the direct_abstract_declarator_top
-                    direct_abstract_declarator_bottom: AbstractType = direct_abstract_declarator.get_child_bottom_not_none()
-                    # set the child of the bottom to the next_abstract_declarator
-                    direct_abstract_declarator_bottom.child = next_abstract_declarator
-                elif isinstance(next_abstract_declarator, list):  # abstract_declarator (parameter_type_list)
-                    # check for an abstract pointer to function
-                    bottom_abstract_declarator: AbstractType = direct_abstract_declarator.get_child_bottom_not_none()
-                    if isinstance(bottom_abstract_declarator, CAbstractPointer) or isinstance(bottom_abstract_declarator, CAbstractArray):
-                        bottom_abstract_declarator.child = CFunction("", next_abstract_declarator, None)
-                    else:
-                        self.fatal_token(current_index, "Expected a abstract pointer or array")
-
-
+            if self.is_direct_abstract_declarator():
+                direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
+                if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFuncion
+                    direct_abstract_declarator.get_child_bottom().child = CFunction("", direct_abstract_declarator_module, None)
+                else:
+                    direct_abstract_declarator.get_child_bottom().child = direct_abstract_declarator_module
             else:
                 return direct_abstract_declarator
 
-    def peek_direct_abstract_declarator_1_2_3_6_7(self) -> AbstractType | list[CParameter]:
+    def peek_direct_abstract_declarator_module(self) -> AbstractType | list[CParameter]:
         """
-        direct_abstract_declarator
+        direct_abstract_declarator_module
             : '(' abstract_declarator ')'
             | '[' ']'
             | '[' constant_expression ']'

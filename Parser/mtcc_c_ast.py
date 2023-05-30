@@ -351,12 +351,6 @@ class CAbstractArray:
         try:
             return self.child.get_child_bottom()
         except AttributeError:
-            return self.child
-
-    def get_child_bottom_not_none(self) -> AbstractType:
-        try:
-            return self.child.get_child_bottom_not_none()
-        except AttributeError:
             return self.child if self.child is not None else self
 
     @property
@@ -376,9 +370,15 @@ class CAbstractArray:
         else:
             return f"[{self.size}]"
 
+    def get_bottom_not_array(self):
+        if isinstance(self.child, CAbstractArray):
+            return self.child.get_bottom_not_array()
+        else:
+            return self.child
+
     def __str__(self):
         if isinstance(self.child, CAbstractArray):
-            return f"{self.get_child_bottom()}[{self.size}]{self.child.__str__size()}"
+            return f"{self.get_bottom_not_array()}[{self.size}]{self.child.__str__size()}"
         # elif isinstance(self.child, CAbstractPointer):
         #     return f"{self.child}[{self.size}]"
         else:
@@ -394,12 +394,6 @@ class CAbstractPointer:
         try:
             return self.child.get_child_bottom()
         except AttributeError:
-            return self.child
-
-    def get_child_bottom_not_none(self) -> AbstractType:
-        try:
-            return self.child.get_child_bottom_not_none()
-        except AttributeError:
             return self.child if self.child is not None else self
 
     @property
@@ -414,14 +408,14 @@ class CAbstractPointer:
         return self
 
     def __str__(self):
-        return f"{self.__pointer_of if self.__pointer_of is not None else ''}{'*' * self.pointer_level if not isinstance(self.__pointer_of, CFunction) else ''}"
+        return f"({self.__pointer_of}){'*' * self.pointer_level if self.pointer_level is not None else ''}"
 
 
 class CFunction:
-    def __init__(self, name: str, parameters: list[CParameter], return_type: CTypeName):
+    def __init__(self, name: str, parameters: list[CParameter], return_type: CType):
         self.name: str = name
         self.parameters: list[CParameter] = parameters
-        self.return_type: CTypeName = return_type
+        self.return_type: CType = return_type
 
     def __str__(self):
         str_ = f"{self.return_type} "
@@ -434,6 +428,20 @@ class CFunction:
         str_ += ")"
 
         return str_
+
+    @property
+    def child(self) -> CType:
+        return self.return_type
+
+    @child.setter
+    def child(self, value: CType):
+        self.return_type = value
+
+    def get_child_bottom(self) -> CType:
+        try:
+            return self.child.get_child_bottom()
+        except AttributeError:
+            return self.child if self.child is not None else self
 
 
 class FunctionCall:
@@ -471,5 +479,7 @@ Node = Union[
     CAbstractArray,
     CParameter
 ]
+
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
 AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray]
+CType = Union[CFunction, CAbstractPointer, CAbstractArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]

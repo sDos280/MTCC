@@ -11,7 +11,7 @@ class Parser:
         for token_index in range(len(self.tokens)):
             self.tokens[token_index].index = token_index
         self.index: int = 0
-        self.current_token: tk.Token | None = self.tokens[self.index]
+        self.current_token: tk.Token = self.tokens[self.index]
 
         self.source_string: str = source_string
 

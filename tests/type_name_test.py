@@ -10,7 +10,7 @@ parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
 
 type_name: Parser.mtcc_c_ast.CTypeName = parser.peek_type_name()
 print("type name 1: AST: ")
-print(json.dumps(type_name.to_dict(), indent=2))
+print(json.dumps(type_name.to_dict(), indent=2), end='\n\n')
 
 type_name: Parser.mtcc_c_ast.CTypeName = parser.peek_type_name()
 print("type name 2: AST: ")

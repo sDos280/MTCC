@@ -10,10 +10,11 @@ class Lexer:
         self.file_string += END_OF_FILE
         main_file.close()
 
-        self.index: int = -1
-        self.current_char: str = None
+        self.index: int = 0
+        self.current_char: str = self.file_string[self.index]
         self.current_line: int = 0  # the first line is 0
         self.tokens: list[tk.Token] = []
+        self.comments: list[tk.Token] = []
 
     def bump_line(self):
         self.current_line += 1
@@ -45,44 +46,50 @@ class Lexer:
         return self.is_char("+-*/%&|^~<>!=?:,.;{}[]()")
 
     def peek_comment(self):
+
         index_: int = self.index
-        str_: str = self.current_char
+        str_: str = ""
 
-        self.peek_char()  # peek first char
-
-        if self.is_char('*'):  # a block comment
+        if self.is_char('/'):  # a one line comment
             str_ += self.current_char
-            self.peek_char()  # peek * char
+            self.peek_char()  # peek / char
 
-            while not self.is_char(END_OF_FILE):
-                if self.is_char('*'):  # check for block comment end
+            if self.is_char('/'):  # a one line comment
+                while not self.is_char(END_OF_FILE):
+                    if self.is_char('\n'):  # check for comment end
+                        str_ += self.current_char
+                        self.peek_char()  # peek \n char
+                        self.bump_line()
+
+                        break
+
                     str_ += self.current_char
-                    self.peek_char()  # peek * char
+                    self.peek_char()  # peek comment char
 
-                    if not self.is_char(END_OF_FILE):
-                        if self.is_char('/'):
-                            str_ += self.current_char
-                            self.peek_char()  # peek / char
-
-                            break
-                    else:
-                        raise SyntaxError(f"An block comment ender in needed, file index: {self.index}")
-
+            elif self.is_char('*'):  # a block comment
                 str_ += self.current_char
-                self.peek_char()  # peek comment char
-                self.bump_line()
+                self.peek_char()  # peek * char
 
-        else:  # a one line comment
-            while not self.is_char(END_OF_FILE):
-                if self.is_char('\n'):  # check for comment end
+                while not self.is_char(END_OF_FILE):
+                    if self.is_char('*'):  # check for block comment end
+                        str_ += self.current_char
+                        self.peek_char()  # peek * char
+
+                        if not self.is_char(END_OF_FILE):
+                            if self.is_char('/'):
+                                str_ += self.current_char
+                                self.peek_char()  # peek / char
+
+                                break
+                        else:
+                            raise SyntaxError(f"An block comment ender in needed, file index: {self.index}")
+
+                    if self.is_char('\n'):
+                        self.bump_line()
                     str_ += self.current_char
-                    self.peek_char()  # peek \n char
-                    self.bump_line()
-
-                    break
-
-                str_ += self.current_char
-                self.peek_char()  # peek comment char
+                    self.peek_char()  # peek comment's char
+            else:
+                raise SyntaxError(f"An comment starter in needed, file index: {self.index}")
 
         return tk.Token(tk.TokenKind.COMMENT, index_, self.current_line - 1, str_)
 
@@ -238,10 +245,9 @@ class Lexer:
         return tk.Token(tk.string_to_separator_or_operator[str_], index_, self.current_line, str_)
 
     def lex(self):
-        self.peek_char()  # initiate the current char
-
         while not self.is_char(END_OF_FILE):
             if self.is_char('\n'):
+                self.peek_char()  # peek \n char
                 self.bump_line()
             if self.is_char_whitespace():
                 self.peek_char()
@@ -257,12 +263,21 @@ class Lexer:
             elif self.is_char('\'\"'):
                 token: tk.Token = self.peek_string_literal()
                 self.tokens.append(token)
+            elif self.is_char('/'):  # comment
+                index: int = self.index
+                line: int = self.current_line
+                try:
+                    token: tk.Token = self.peek_comment()
+                    self.comments.append(token)
+                except SyntaxError:  # operator
+                    self.index = index
+                    self.current_line = line
+                    self.current_char = self.file_string[self.index]
+                    token: tk.Token = self.peek_operator_or_separator()
+                    self.tokens.append(token)
             elif self.is_char_operator_or_separator():
                 token: tk.Token = self.peek_operator_or_separator()
                 self.tokens.append(token)
-            elif self.is_char('/'):
-                token: tk.Token = self.peek_comment()
-                # self.tokens.append(token)
             else:
                 self.peek_char()
 

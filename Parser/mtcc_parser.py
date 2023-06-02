@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import Parser.mtcc_error_handler as eh
 from Parser.mtcc_c_ast import *
-import json
 
 
 class Parser:
@@ -154,9 +153,9 @@ class Parser:
 
     def peek_specifier_qualifier_list(self) -> CSpecifierType:
         # the idea is form https://github.com/sgraham/dyibicc/blob/main/src/parse.c#L359
-        specifier_counter: CSpecifierKind = 0
-        qualifier_counter: CQualifierKind = 0
-        type: CSpecifierType = 0
+        specifier_counter: CSpecifierKind = CSpecifierKind(0)
+        qualifier_counter: CQualifierKind = CQualifierKind(0)
+        type: CSpecifierType = NoneNode()
 
         while self.is_token_type_specifier() or self.is_token_type_qualifier():
             # handel qualifiers
@@ -250,7 +249,7 @@ class Parser:
 
             self.peek_token()  # peek the specifier token
 
-        if type == 0:
+        if isinstance(type, NoneNode):
             self.fatal_token(self.current_token.index,
                              "Invalid specifier in that current contex",
                              eh.SpecifierQualifierListInvalid
@@ -261,12 +260,12 @@ class Parser:
     def peek_type_name(self) -> CTypeName:
         specified_qualifier: CSpecifierType = self.peek_specifier_qualifier_list()
 
-        abstract_declarator: AbstractType = None
+        abstract_declarator: AbstractType = NoneNode()
         if self.is_abstract_declarator():
             abstract_declarator: AbstractType = self.peek_abstract_declarator()
             abstract_declarator.get_child_bottom().child = specified_qualifier
 
-        return CTypeName(False, False, abstract_declarator if abstract_declarator is not None else specified_qualifier)
+        return CTypeName(False, False, abstract_declarator if not isinstance(abstract_declarator, NoneNode) else specified_qualifier)
 
     def peek_parameter_type_list(self) -> list[CParameter]:
         if self.is_abstract_declarator():
@@ -285,10 +284,10 @@ class Parser:
 
             if self.is_direct_abstract_declarator():
                 direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
-                direct_abstract_declarator.get_child_bottom().child = CAbstractPointer(pointer_level, None)
+                direct_abstract_declarator.get_child_bottom().child = CAbstractPointer(pointer_level, NoneNode())
                 return direct_abstract_declarator
             else:
-                return CAbstractPointer(pointer_level, None)
+                return CAbstractPointer(pointer_level, NoneNode())
 
     def peek_direct_abstract_declarator(self) -> AbstractType:
         # return the top and bottom of the direct abstract declarator
@@ -297,8 +296,8 @@ class Parser:
         while True:
             if self.is_direct_abstract_declarator():
                 direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
-                if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFuncion
-                    direct_abstract_declarator.get_child_bottom().child = CFunction(None, direct_abstract_declarator_module, None)
+                if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
+                    direct_abstract_declarator.get_child_bottom().child = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
                 else:
                     direct_abstract_declarator.get_child_bottom().child = direct_abstract_declarator_module
             else:
@@ -340,12 +339,12 @@ class Parser:
             if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
                 self.peek_token()  # peek ] token
 
-                return CAbstractArray(None, None)
+                return CAbstractArray(NoneNode(), NoneNode())
             else:
                 constant_expression: Node = self.peek_constant_expression()
                 self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected a ] token", eh.TokenExpected)
                 self.peek_token()  # peek ] token
-                return CAbstractArray(constant_expression, None)
+                return CAbstractArray(constant_expression, NoneNode())
         else:
             self.fatal_token(self.current_token.index, "Expected a ( or [ token", eh.TokenExpected)
 

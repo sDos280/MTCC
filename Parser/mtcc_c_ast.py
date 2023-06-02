@@ -43,44 +43,10 @@ class CPrimitiveDataTypes(enum.Enum):
             "value": str(self)
         }
 
-    def __str__(self):
-        if self == CPrimitiveDataTypes.Void:
-            return "void"
-        elif self == CPrimitiveDataTypes.Short:
-            return "short"
-        elif self == CPrimitiveDataTypes.UShort:
-            return "unsigned short"
-        elif self == CPrimitiveDataTypes.Char:
-            return "char"
-        elif self == CPrimitiveDataTypes.UChar:
-            return "unsigned char"
-        elif self == CPrimitiveDataTypes.Int:
-            return "int"
-        elif self == CPrimitiveDataTypes.UInt:
-            return "unsigned int"
-        elif self == CPrimitiveDataTypes.Long:
-            return "long"
-        elif self == CPrimitiveDataTypes.ULong:
-            return "unsigned long"
-        elif self == CPrimitiveDataTypes.LongLong:
-            return "long long"
-        elif self == CPrimitiveDataTypes.ULongLong:
-            return "unsigned long long"
-        elif self == CPrimitiveDataTypes.Float:
-            return "float"
-        elif self == CPrimitiveDataTypes.Double:
-            return "double"
-        elif self == CPrimitiveDataTypes.LongDouble:
-            return "long double"
-
 
 class NoneNode:
     def to_dict(self):
-        return {
-        }
-
-    def __str__(self):
-        return "NoneNode"
+        return ''
 
 
 class CStruct:
@@ -108,18 +74,6 @@ class CTypeName:
             "is_volatile": self.is_volatile,
             "type": self.type.to_dict()
         }
-
-    def __str__(self):
-        str_: str = ""
-
-        if self.is_const:
-            str_ += "const "
-        if self.is_volatile:
-            str_ += "volatile "
-
-        str_ += str(self.type)
-
-        return str_
 
 
 class CBinaryOpKind(enum.Enum):
@@ -168,55 +122,6 @@ class CBinaryOp:
             "right": self.right.to_dict()
         }
 
-    def __str__(self):
-        str_: str = "("
-        str_ += str(self.left)
-
-        match self.kind:
-            case CBinaryOpKind.Addition:
-                str_ += ' + '
-            case CBinaryOpKind.Subtraction:
-                str_ += ' - '
-            case CBinaryOpKind.Multiplication:
-                str_ += ' * '
-            case CBinaryOpKind.Division:
-                str_ += ' / '
-            case CBinaryOpKind.Modulus:
-                str_ += ' % '
-            case CBinaryOpKind.Assignment:
-                str_ += ' = '
-            case CBinaryOpKind.EqualTo:
-                str_ += ' == '
-            case CBinaryOpKind.NotEqualTo:
-                str_ += ' != '
-            case CBinaryOpKind.GreaterThan:
-                str_ += ' > '
-            case CBinaryOpKind.LessThan:
-                str_ += ' < '
-            case CBinaryOpKind.GreaterThanOrEqualTo:
-                str_ += ' >= '
-            case CBinaryOpKind.LessThanOrEqualTo:
-                str_ += ' <= '
-            case CBinaryOpKind.BitwiseAND:
-                str_ += ' & '
-            case CBinaryOpKind.BitwiseOR:
-                str_ += ' | '
-            case CBinaryOpKind.BitwiseXOR:
-                str_ += ' ^ '
-            case CBinaryOpKind.LeftShift:
-                str_ += ' << '
-            case CBinaryOpKind.RightShift:
-                str_ += ' >> '
-            case CBinaryOpKind.LogicalAND:
-                str_ += ' && '
-            case CBinaryOpKind.LogicalOR:
-                str_ += ' || '
-
-        str_ += str(self.right)
-        str_ += ')'
-
-        return str_
-
 
 class CUnaryOpKind(enum.Enum):
     """"""
@@ -249,43 +154,6 @@ class CUnaryOp:
             "expression": self.expression.to_dict()
         }
 
-    def __str__(self):
-        str_: str = "("
-
-        """         
-        case CUnaryOpKind.PreIncrease:
-                        str_ += '++'
-                        str_ += str(self.expression)
-                    case CUnaryOpKind.PreDecrease:
-                        str_ += '--'
-                        str_ += str(self.expression)
-                    case CUnaryOpKind.PostIncrease:
-                        str_ += str(self.expression)
-                        str_ += '++'
-                    case CUnaryOpKind.PostDecrease:
-                        str_ += str(self.expression)
-                        str_ += '--'
-                        """
-
-        match self.kind:
-            case CUnaryOpKind.Reference:
-                str_ += '&'
-            case CUnaryOpKind.Dereference:
-                str_ += '*'
-            case CUnaryOpKind.Plus:
-                str_ += '+'
-            case CUnaryOpKind.Minus:
-                str_ += '-'
-            case CUnaryOpKind.BitwiseNOT:
-                str_ += '~'
-            case CUnaryOpKind.LogicalNOT:
-                str_ += '!'
-
-        str_ += str(self.expression)
-        str_ += ')'
-
-        return str_
-
 
 class CTernaryOp:
     def __init__(self, condition: Node, true_value: Node, false_value: Node):
@@ -301,9 +169,6 @@ class CTernaryOp:
             "false_value": self.false_value.to_dict()
         }
 
-    def __str__(self):
-        return f"{self.condition} ? {self.true_value} : {self.false_value}"
-
 
 class CCast:
     def __init__(self, cast_to: CTypeName, cast_expression: Node):
@@ -317,9 +182,6 @@ class CCast:
             "cast_expression": self.cast_expression.to_dict()
         }
 
-    def __str__(self):
-        return f"({self.cast_to}){self.cast_expression}"
-
 
 class CEnumMember:
     def __init__(self, identifier: CIdentifier, const_expression: Node):
@@ -332,9 +194,6 @@ class CEnumMember:
             "name": self.identifier.token.string,
             "value": self.const_expression.to_dict()
         }
-
-    def __str__(self) -> str:
-        return f"{self.identifier} = {self.const_expression}"
 
 
 class CEnum:
@@ -350,11 +209,6 @@ class CEnum:
             "members": [member.to_dict() for member in self.members]
         }
 
-    def __str__(self):
-        member_strings = [str(member) for member in self.members]
-        members_str = ",\n".join(member_strings)
-        return f"enum {self.name} {{\n{members_str}\n}}"
-
 
 class Number:
     def __init__(self, value: int | float):
@@ -365,9 +219,6 @@ class Number:
             "node": "Number",
             "value": self.value
         }
-
-    def __str__(self):
-        return str(self.value)
 
 
 class CString:
@@ -380,9 +231,6 @@ class CString:
             "node": "CString",
             "contain": self.contain
         }
-
-    def __str__(self):
-        return self.contain
 
 
 class CIdentifier:
@@ -398,9 +246,6 @@ class CIdentifier:
             "token": None
         }
 
-    def __str__(self):
-        return self.token.string if self.token is not None else ""
-
 
 class Variable:
     def __init__(self, identifier: CIdentifier, type):
@@ -413,9 +258,6 @@ class Variable:
             "name": self.identifier,
             "type": self.type.to_dict()
         }
-
-    def __str__(self):
-        return f"{self.type} {self.identifier};"
 
 
 class Block:
@@ -430,9 +272,6 @@ class Block:
             "variables": [variable.to_dict() for variable in self.variables]
         }
 
-    def __str__(self):
-        return "{" + ";".join(str(s) for s in self.statements) + "}"
-
 
 class CParameter:
     def __init__(self, identifier: CIdentifier, type: CTypeName):
@@ -445,9 +284,6 @@ class CParameter:
             "name": self.identifier,
             "type": self.type.to_dict()
         }
-
-    def __str__(self):
-        return f"{self.type} {self.identifier}"
 
 
 class CAbstractArray:
@@ -466,7 +302,7 @@ class CAbstractArray:
         try:
             return self.child.get_child_bottom()
         except AttributeError:
-            return self.child if self.child is not None else self
+            return self.child if not isinstance(self.child, NoneNode) else self
 
     @property
     def child(self) -> AbstractType:
@@ -479,29 +315,15 @@ class CAbstractArray:
     def copy(self):
         return CAbstractArray(self.size, self.__array_of)
 
-    def __str__size(self):
-        if isinstance(self.child, CAbstractArray):
-            return f"[{self.size}]{self.child.__str__size()}"
-        else:
-            return f"[{self.size}]"
-
     def get_bottom_not_array(self):
         if isinstance(self.child, CAbstractArray):
             return self.child.get_bottom_not_array()
         else:
             return self.child
 
-    def __str__(self):
-        if isinstance(self.child, CAbstractArray):
-            return f"{self.get_bottom_not_array()}[{self.size}]{self.child.__str__size()}"
-        # elif isinstance(self.child, CAbstractPointer):
-        #     return f"{self.child}[{self.size}]"
-        else:
-            return f"{self.child}[{self.size}]"
-
 
 class CAbstractPointer:
-    def __init__(self, pointer_level: int, pointer_of: AbstractType):
+    def __init__(self, pointer_level: int | None, pointer_of: AbstractType):
         self.pointer_level: int = pointer_level
         self.__pointer_of: AbstractType = pointer_of
 
@@ -516,7 +338,7 @@ class CAbstractPointer:
         try:
             return self.child.get_child_bottom()
         except AttributeError:
-            return self.child if self.child is not None else self
+            return self.child if not isinstance(self.child, NoneNode) else self
 
     @property
     def child(self) -> AbstractType:
@@ -529,12 +351,9 @@ class CAbstractPointer:
     def copy(self):
         return self
 
-    def __str__(self):
-        return f"({self.__pointer_of}){'*' * self.pointer_level if self.pointer_level is not None else ''}"
-
 
 class CFunction:
-    def __init__(self, identifier: CIdentifier | None, parameters: list[CParameter], return_type: CType):
+    def __init__(self, identifier: CIdentifier | NoneNode, parameters: list[CParameter], return_type: CType):
         self.identifier: CIdentifier = identifier
         self.parameters: list[CParameter] = parameters
         self.return_type: CType = return_type
@@ -542,22 +361,10 @@ class CFunction:
     def to_dict(self):
         return {
             "node": "CFunction",
-            "name": self.identifier,
+            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "parameters": [parameter.to_dict() for parameter in self.parameters],
             "return_type": self.return_type.to_dict()
         }
-
-    def __str__(self):
-        str_ = f"{self.return_type} "
-        str_ += f"{self.identifier}("
-        if len(self.parameters) != 0:
-            for parameter in self.parameters:
-                str_ += f"{parameter}, "
-            str_ = str_[0:-2]
-
-        str_ += ")"
-
-        return str_
 
     @property
     def child(self) -> CType:
@@ -571,23 +378,13 @@ class CFunction:
         try:
             return self.child.get_child_bottom()
         except AttributeError:
-            return self.child if self.child is not None else self
+            return self.child if not isinstance(self.child, NoneNode) else self
 
 
 class FunctionCall:
     def __init__(self, function: CFunction, parameters_type: list):
         self.function: CFunction = function
         self.parameters_type: list = parameters_type
-
-    def __str__(self):
-        str_ = f"{self.function.identifier.token.string}("
-        for parameter in self.parameters_type:
-            str_ += f"{parameter}, "
-
-        str_ = str_[0:-2]
-        str_ += ")"
-
-        return str_
 
 
 Node = Union[
@@ -611,6 +408,6 @@ Node = Union[
     CParameter
 ]
 
-CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
-AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray]
-CType = Union[CFunction, CAbstractPointer, CAbstractArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef]
+CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
+AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray, NoneNode]
+CType = Union[CFunction, CAbstractPointer, CAbstractArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]

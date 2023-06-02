@@ -397,6 +397,11 @@ class Parser:
         else:
             return type
 
+    """def peek_declarator(self) -> CDeclarator:
+        pointer: CPointer = self.peek_pointer()
+        direct_declarator: DirectDeclarator = self.peek_direct_declarator()
+        return CDeclarator(pointer, direct_declarator)"""
+
     def peek_parameter_declaration(self) -> CParameter:
         declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()
 
@@ -432,6 +437,8 @@ class Parser:
     def peek_direct_abstract_declarator(self) -> AbstractType:
         # return the top and bottom of the direct abstract declarator
         direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
+        if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
+            direct_abstract_declarator_module = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
         direct_abstract_declarator: AbstractType = direct_abstract_declarator_module
         while True:
             if self.is_direct_abstract_declarator():

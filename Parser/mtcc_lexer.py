@@ -31,7 +31,7 @@ class Lexer:
         return self.current_char in string
 
     def is_char_whitespace(self) -> bool:
-        return self.current_char in "\n\t\r\0 "
+        return self.current_char in "\n\t\r "
 
     def is_char_numeric(self) -> bool:
         return self.current_char.isnumeric()
@@ -279,6 +279,8 @@ class Lexer:
                 token: tk.Token = self.peek_operator_or_separator()
                 self.tokens.append(token)
             else:
-                self.peek_char()
+                if self.is_char(END_OF_FILE):
+                    break
+                raise SyntaxError(f"Unexpected character: {self.current_char}, file index: {self.index}")
 
         self.tokens.append(tk.Token(tk.TokenKind.END, len(self.file_string) - 1, self.current_line, '\0'))

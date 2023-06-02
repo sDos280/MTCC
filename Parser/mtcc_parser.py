@@ -425,6 +425,66 @@ class Parser:
 
         return pointer
 
+    def peek_direct_declarator_module(self) -> Node | list[CParameter]:
+        """
+                direct_declarator_module
+                    : '(' declarator ')'
+                    | '[' constant_expression ']'
+                    | '[' ']'
+                    | '(' parameter_type_list ')'
+                    | '(' ')'
+                    ;
+                """
+        if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            self.peek_token()  # peek ( token
+            if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
+                self.peek_token()  # peek ) token
+                return list[CParameter]()
+
+            try:
+                declarator: CDeclarator = self.peek_declarator()
+
+                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
+                self.peek_token()  # peek ) token
+
+                return declarator
+            except:
+                parameter_type_list: list[CParameter] = self.peek_parameter_type_list()
+
+                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
+                self.peek_token()  # peek ) token
+
+                return parameter_type_list
+        elif self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
+            self.peek_token()  # peek [ token
+            if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
+                self.peek_token()  # peek ] token
+                return NoneNode()
+
+            constant_expression: Node = self.peek_constant_expression()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected closing bracket", eh.TokenExpected)
+            self.peek_token()  # peek ] token
+
+            return constant_expression
+
+    def peek_direct_declarator(self) -> CDeclarator:
+        if self.is_token_kind(tk.TokenKind.IDENTIFIER):
+            identifier: CIdentifier = CIdentifier(self.current_token)
+            self.peek_token()  # peek the identifier token
+        elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+            self.peek_token()  # peek the opening parenthesis token
+
+            declarator: CDeclarator = self.peek_declarator()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
+            self.peek_token()  # peek the closing parenthesis token
+
+            return declarator
+        else:
+            self.fatal_token(self.current_token.index, "Expected identifier or opening parenthesis",
+                             eh.TokenExpected)
+
     def peek_declarator(self) -> CDeclarator:
         pointer: CPointer = self.peek_pointer()
         assert False, "Not implemented"

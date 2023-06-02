@@ -6,4 +6,4 @@ lexer.lex()
 
 for index, escape_sequence in enumerate(lexer.tokens):
     print(f"comment {index + 1}: Lexer: ")
-    print(escape_sequence.string)
+    print(escape_sequence.string, end='\n\n')

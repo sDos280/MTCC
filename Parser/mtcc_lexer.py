@@ -226,14 +226,14 @@ class Lexer:
 
         self.peek_char()  # peek first char
 
-        while not self.is_char(END_OF_FILE) and str_ in tk.string_to_separator_or_operator.keys() and self.is_char_operator_or_separator():
+        while not self.is_char(END_OF_FILE) and self.is_char_operator_or_separator():
             str_ += self.current_char
             self.peek_char()
 
-        # we peek one too much char
-        if self.index != len(self.file_string) - 1 and len(str_) > 1:  # we need to drop only if we aren't on the last char (not including \0)
-            self.drop_char()
-            str_ = str_[0:-1]
+            if str_ not in tk.string_to_separator_or_operator.keys():
+                str_ = str_[0:-1]
+                self.drop_char()  # drop the last char
+                break
 
         return tk.Token(tk.string_to_separator_or_operator[str_], index_, self.current_line, str_)
 

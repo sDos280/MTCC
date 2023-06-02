@@ -74,6 +74,15 @@ class CPrimitiveDataTypes(enum.Enum):
             return "long double"
 
 
+class NoneNode:
+    def to_dict(self):
+        return {
+        }
+
+    def __str__(self):
+        return "NoneNode"
+
+
 class CStruct:
     pass
 
@@ -313,26 +322,26 @@ class CCast:
 
 
 class CEnumMember:
-    def __init__(self, identifier: CIdentifier, value: Node):
+    def __init__(self, identifier: CIdentifier, const_expression: Node):
         self.identifier: CIdentifier = identifier
-        self.value: Node = value
+        self.const_expression: Node = const_expression
 
     def to_dict(self):
         return {
             "node": "CEnumMember",
-            "name": self.identifier,
-            "value": self.value.to_dict()
+            "name": self.identifier.token.string,
+            "value": self.const_expression.to_dict()
         }
 
     def __str__(self) -> str:
-        return f"{self.identifier} = {self.value}"
+        return f"{self.identifier} = {self.const_expression}"
 
 
 class CEnum:
     def __init__(self, name: str, members: list[CEnumMember]):
         self.name: str = name
         self.members: list[CEnumMember] = members
-        self.current_member_value: int = 0
+        self.current_member_value: Node = Number(0)
 
     def to_dict(self):
         return {
@@ -582,6 +591,7 @@ class FunctionCall:
 
 
 Node = Union[
+    NoneNode,
     Block,
     CEnum,
     CEnumMember,

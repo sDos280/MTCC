@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import Parser.mtcc_error_handler as eh
-import Parser.mtcc_token as tk
 from Parser.mtcc_c_ast import *
 import json
 
@@ -11,8 +10,8 @@ class Parser:
         self.tokens: list[tk.Token] = tokens
         for token_index in range(len(self.tokens)):
             self.tokens[token_index].index = token_index
-        self.current_token: tk.Token | None = None
-        self.index: int = -1
+        self.index: int = 0
+        self.current_token: tk.Token | None = self.tokens[self.index]
 
         self.source_string: str = source_string
 
@@ -770,37 +769,35 @@ class Parser:
         conditional_expression: Node = self.peek_conditional_expression()
         return conditional_expression
 
-    def peek_enumerator(self, enum: CEnum) -> CEnumMember:
-        self.expect_token_kind(tk.TokenKind.IDENTIFIER, "Expecting an identifier")
+    def peek_enumerator(self) -> CEnumMember:
+        self.expect_token_kind(tk.TokenKind.IDENTIFIER, "Expecting an identifier", eh.TokenExpected)
 
-        enum.current_member_value += 1
-        name: str = self.current_token.string
+        identifier: tk.Token = self.current_token
+
+        enum_member: CEnumMember = CEnumMember(CIdentifier(identifier), NoneNode())
 
         self.peek_token()  # peek identifier token
-
-        member: CEnumMember = CEnumMember(name, enum.current_member_value)
 
         if self.is_token_kind(tk.TokenKind.EQUALS):
             self.peek_token()  # peek the equal token
 
             member_assigned_value: Node = self.peek_constant_expression()
 
-            member.value = member_assigned_value
-            enum.current_member_value = member_assigned_value
+            enum_member.const_expression = member_assigned_value
 
-        return member
+        return enum_member
 
-    def peek_enumerator_list(self, enum: CEnum) -> list[CEnumMember]:
+    def peek_enumerator_list(self) -> list[CEnumMember]:
         members: list[CEnumMember] = []
 
-        current_member: CEnumMember = self.peek_enumerator(enum)
+        current_member: CEnumMember = self.peek_enumerator()
 
         members.append(current_member)
 
         while self.is_token_kind(tk.TokenKind.COMMA):
             self.peek_token()  # peek comma token
 
-            current_member = self.peek_enumerator(enum)
+            current_member = self.peek_enumerator()
 
             members.append(current_member)
 
@@ -810,7 +807,7 @@ class Parser:
         return members
 
     def peek_enum_specifier(self) -> CEnum:
-        self.expect_token_kind(tk.TokenKind.ENUM, "An enum keyword was expected")
+        self.expect_token_kind(tk.TokenKind.ENUM, "An enum keyword was expected", SyntaxError)
 
         self.peek_token()  # peek the enum token
 
@@ -828,9 +825,9 @@ class Parser:
         if self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
             self.peek_token()  # peek the opening curly brace token
 
-            members = self.peek_enumerator_list(enum)
+            members = self.peek_enumerator_list()
 
-            self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "An enumerator list closer is needed")
+            self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "An enumerator list closer is needed", SyntaxError)
 
             self.peek_token()  # peek the closing curly brace token
 
@@ -847,7 +844,6 @@ class Parser:
 
         expression = self.peek_expression()
 
-        print(json.dumps(expression.to_dict(), indent=2))
         """while not (self.current_token is None or self.is_token_kind(tk.TokenKind.END)):
             statement = None
 

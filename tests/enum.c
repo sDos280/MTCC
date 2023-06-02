@@ -8,7 +8,12 @@ enum week {
     SUNDAY
 };
 
-int main()
-{
-
-}
+enum week {
+    MONDAY,
+    TUESDAY,
+    WEDNESDAY,
+    THURSDAY,
+    FRIDAY = -6,
+    SATURDAY,
+    SUNDAY
+};

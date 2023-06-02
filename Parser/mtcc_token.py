@@ -192,3 +192,8 @@ class Token:
         self.line: int = line
         self.string: str = string  # the string of the token in the file (for debugging)
         self.index: int = 0  # the index of the token in the token stream
+
+    def to_dict(self):
+        return {
+            self.string,
+        }

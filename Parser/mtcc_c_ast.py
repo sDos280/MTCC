@@ -288,9 +288,9 @@ class Block:
 
 
 class CDeclarator:
-    def __init__(self, identifier: CIdentifier | NoneNode, type: CTypeName):
+    def __init__(self, identifier: CIdentifier | NoneNode, type: Node):
         self.identifier: CIdentifier | NoneNode = identifier
-        self.type: CTypeName = type
+        self.type: Node = type
 
     def to_dict(self):
         return {
@@ -298,6 +298,9 @@ class CDeclarator:
             "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict()
         }
+
+    def get_child_bottom(self) -> Node:
+        return self.type.get_child_bottom()
 
 
 class CAbstractArray:

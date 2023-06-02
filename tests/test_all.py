@@ -3,3 +3,4 @@ import type_name_test
 import enum_test
 import escape_sequence_test
 import pointer_test
+import declarator_test

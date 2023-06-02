@@ -128,6 +128,10 @@ class Parser:
         """check if the current token is a direct abstract declarator starter"""
         return self.is_token_kind([tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
 
+    def is_direct_declarator(self) -> bool:
+        """check if the current token is a direct declarator starter"""
+        return self.is_token_kind([tk.TokenKind.IDENTIFIER, tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
+
     def peek_token_type_qualifier(self) -> tk.Token:
         self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token",
                                eh.TypeQualifierNotFound)
@@ -459,37 +463,69 @@ class Parser:
             self.peek_token()  # peek [ token
             if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
                 self.peek_token()  # peek ] token
-                return NoneNode()
+                return CAbstractArray(NoneNode(), NoneNode())
 
             constant_expression: Node = self.peek_constant_expression()
 
             self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected closing bracket", eh.TokenExpected)
             self.peek_token()  # peek ] token
 
-            return constant_expression
+            return CAbstractArray(constant_expression, NoneNode())
+        else:
+            self.fatal_token(self.current_token.index,
+                             "Expected opening parenthesis or opening bracket",
+                             eh.TokenExpected
+                             )
 
     def peek_direct_declarator(self) -> CDeclarator:
-        if self.is_token_kind(tk.TokenKind.IDENTIFIER):
-            identifier: CIdentifier = CIdentifier(self.current_token)
-            self.peek_token()  # peek the identifier token
-        elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-            self.peek_token()  # peek the opening parenthesis token
+        identifier: CIdentifier | NoneNode = NoneNode()
+        if self.is_direct_declarator():
+            if self.is_token_kind(tk.TokenKind.IDENTIFIER):
+                identifier = CIdentifier(self.current_token)
+                self.peek_token()  # peek the identifier token
+            elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+                self.peek_token()  # peek the opening parenthesis token
 
-            declarator: CDeclarator = self.peek_declarator()
+                declarator: CDeclarator = self.peek_declarator()
 
-            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
-            self.peek_token()  # peek the closing parenthesis token
+                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
+                self.peek_token()  # peek the closing parenthesis token
 
-            return declarator
+                return declarator
         else:
-            self.fatal_token(self.current_token.index, "Expected identifier or opening parenthesis",
-                             eh.TokenExpected)
+            self.fatal_token(self.current_token.index,
+                             "Expected identifier or opening parenthesis",
+                             eh.TokenExpected
+                             )
+
+        declarator: CDeclarator = CDeclarator(identifier, NoneNode())
+        direct_declarator_module: Node | list[CParameter] = self.peek_direct_declarator_module()
+
+        if isinstance(direct_declarator_module, list):  # need to convert direct_declarator_module to CFunction
+            direct_declarator_module = CFunction(NoneNode(), direct_declarator_module, NoneNode())
+
+        declarator.type = direct_declarator_module
+
+        while True:
+            if self.is_direct_abstract_declarator():
+                direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
+                if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
+                    declarator.get_child_bottom().child = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
+                else:
+                    declarator.get_child_bottom().child = direct_abstract_declarator_module
+            else:
+                return declarator
 
     def peek_declarator(self) -> CDeclarator:
-        pointer: CPointer = self.peek_pointer()
-        assert False, "Not implemented"
-        direct_declarator: DirectDeclarator = self.peek_direct_declarator()
-        return CDeclarator(pointer, direct_declarator)
+        pointer: CPointer | NoneNode = NoneNode()
+        if self.is_token_kind(tk.TokenKind.ASTERISK):
+            pointer = self.peek_pointer()
+
+        direct_declarator: CDeclarator = self.peek_direct_declarator()
+
+        if not isinstance(pointer, NoneNode):
+            direct_declarator.get_child_bottom().child = pointer
+        return direct_declarator
 
     def peek_parameter_declaration(self) -> CParameter:
         declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()

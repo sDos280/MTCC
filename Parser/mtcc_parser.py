@@ -397,10 +397,39 @@ class Parser:
         else:
             return type
 
-    """def peek_declarator(self) -> CDeclarator:
+    def peek_type_qualifier_list(self) -> CQualifierKind:
+        qualifier_counter: CQualifierKind = CQualifierKind(0)
+        while self.is_token_type_qualifier():
+            if self.is_token_kind(tk.TokenKind.CONST):
+                qualifier_counter |= CQualifierKind.Const
+            elif self.is_token_kind(tk.TokenKind.VOLATILE):
+                qualifier_counter |= CQualifierKind.Volatile
+            self.peek_token()  # peek the qualifier token
+
+        return qualifier_counter
+
+    def peek_pointer(self) -> CPointer:
+        pointer: CPointer = CPointer(0, CQualifierKind(0), NoneNode())
+        pointer_counter: int = 0
+
+        while self.is_token_kind(tk.TokenKind.ASTERISK):
+            pointer_counter += 1
+            self.peek_token()  # peek * token
+
+        pointer.pointer_level = pointer_counter
+        if self.is_token_type_qualifier():
+            pointer.qualifiers = self.peek_type_qualifier_list()
+
+        if self.is_token_kind(tk.TokenKind.ASTERISK):
+            pointer.child = self.peek_pointer()
+
+        return pointer
+
+    def peek_declarator(self) -> CDeclarator:
         pointer: CPointer = self.peek_pointer()
+        assert False, "Not implemented"
         direct_declarator: DirectDeclarator = self.peek_direct_declarator()
-        return CDeclarator(pointer, direct_declarator)"""
+        return CDeclarator(pointer, direct_declarator)
 
     def peek_parameter_declaration(self) -> CParameter:
         declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()
@@ -440,6 +469,7 @@ class Parser:
         if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
             direct_abstract_declarator_module = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
         direct_abstract_declarator: AbstractType = direct_abstract_declarator_module
+
         while True:
             if self.is_direct_abstract_declarator():
                 direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()

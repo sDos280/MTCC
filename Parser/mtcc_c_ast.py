@@ -8,6 +8,12 @@ class CQualifierKind(enum.Flag):
     Const = enum.auto()
     Volatile = enum.auto()
 
+    def to_dict(self):
+        return {
+            "node": "CQualifierKind",
+            "value": str(self)
+        }
+
 
 class CStorageClassSpecifier(enum.Flag):
     Typedef = enum.auto()
@@ -281,14 +287,14 @@ class Block:
         }
 
 
-class CParameter:
+class CDeclarator:
     def __init__(self, identifier: CIdentifier | NoneNode, type: CTypeName):
         self.identifier: CIdentifier | NoneNode = identifier
         self.type: CTypeName = type
 
     def to_dict(self):
         return {
-            "node": "CParameter",
+            "node": "CDeclarator",
             "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict()
         }
@@ -330,8 +336,31 @@ class CAbstractArray:
             return self.child
 
 
+class CPointer:
+    def __init__(self, pointer_level: int, qualifiers: CQualifierKind, pointer_of: AbstractType):
+        self.pointer_level: int = pointer_level
+        self.qualifiers: CQualifierKind = qualifiers
+        self.__pointer_of: AbstractType = pointer_of
+
+    @property
+    def child(self) -> AbstractType:
+        return self.__pointer_of
+
+    @child.setter
+    def child(self, value: AbstractType):
+        self.__pointer_of = value
+
+    def to_dict(self):
+        return {
+            "node": "CPointer",
+            "pointer_level": self.pointer_level,
+            "qualifiers": self.qualifiers.to_dict(),
+            "pointer_of": self.child.to_dict()
+        }
+
+
 class CAbstractPointer:
-    def __init__(self, pointer_level: int | None, pointer_of: AbstractType):
+    def __init__(self, pointer_level: int, pointer_of: AbstractType):
         self.pointer_level: int = pointer_level
         self.__pointer_of: AbstractType = pointer_of
 
@@ -395,6 +424,11 @@ class FunctionCall:
         self.parameters_type: list = parameters_type
 
 
+CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
+AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray, NoneNode]
+CType = Union[CFunction, CAbstractPointer, CAbstractArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
+CParameter = CDeclarator
+
 Node = Union[
     NoneNode,
     Block,
@@ -409,13 +443,10 @@ Node = Union[
     CUnaryOp,
     CCast,
     FunctionCall,
+    CPointer,
     CAbstractPointer,
     CAbstractArray,
     CFunction,
     CAbstractArray,
     CParameter
 ]
-
-CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
-AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray, NoneNode]
-CType = Union[CFunction, CAbstractPointer, CAbstractArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]

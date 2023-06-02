@@ -39,6 +39,14 @@ class Parser:
         else:
             return self.current_token.kind in kind
 
+    def is_token_storage_class_specifier(self) -> bool:
+        return self.is_token_kind(
+            [tk.TokenKind.TYPEDEF,
+             tk.TokenKind.EXTERN,
+             tk.TokenKind.STATIC,
+             tk.TokenKind.AUTO,
+             tk.TokenKind.REGISTER])
+
     def is_token_type_specifier(self) -> bool:
         return self.is_token_kind(
             [tk.TokenKind.VOID,
@@ -268,10 +276,8 @@ class Parser:
         return CTypeName(False, False, abstract_declarator if not isinstance(abstract_declarator, NoneNode) else specified_qualifier)
 
     def peek_parameter_type_list(self) -> list[CParameter]:
-        if self.is_abstract_declarator():
-            raise SyntaxError("Expected a parameter type list")
-        else:
-            return list[CParameter]()
+        parameter_list: list[CParameter] = []
+        if self.is_token_kind()
 
     def peek_abstract_declarator(self) -> AbstractType:
         if self.is_direct_abstract_declarator():

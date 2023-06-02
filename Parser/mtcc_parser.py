@@ -275,9 +275,143 @@ class Parser:
 
         return CTypeName(False, False, abstract_declarator if not isinstance(abstract_declarator, NoneNode) else specified_qualifier)
 
+    def peek_declaration_specifiers(self) -> CSpecifierType:
+        # the idea is form https://github.com/sgraham/dyibicc/blob/main/src/parse.c#L359
+        storage_class_specifier_counter: CStorageClassSpecifier = CStorageClassSpecifier(0)
+        specifier_counter: CSpecifierKind = CSpecifierKind(0)
+        qualifier_counter: CQualifierKind = CQualifierKind(0)
+        type: CSpecifierType = NoneNode()
+
+        while self.is_token_storage_class_specifier() or self.is_token_type_specifier() or self.is_token_type_qualifier():
+            # handle storage class specifiers
+            # TODO: make a way that those qualifiers will be really used
+            if self.is_token_storage_class_specifier():
+                if self.is_token_kind(tk.TokenKind.TYPEDEF):
+                    storage_class_specifier_counter |= CStorageClassSpecifier.Typedef
+                elif self.is_token_kind(tk.TokenKind.EXTERN):
+                    storage_class_specifier_counter |= CStorageClassSpecifier.Extern
+                elif self.is_token_kind(tk.TokenKind.STATIC):
+                    storage_class_specifier_counter |= CStorageClassSpecifier.Static
+                elif self.is_token_kind(tk.TokenKind.AUTO):
+                    storage_class_specifier_counter |= CStorageClassSpecifier.Auto
+                elif self.is_token_kind(tk.TokenKind.REGISTER):
+                    storage_class_specifier_counter |= CStorageClassSpecifier.Register
+                self.peek_token()
+
+            # handel qualifiers
+            # TODO: make a way that those qualifiers will be really used
+            if self.is_token_type_qualifier():
+                if self.is_token_kind(tk.TokenKind.CONST):
+                    qualifier_counter |= CQualifierKind.Const
+                elif self.is_token_kind(tk.TokenKind.VOLATILE):
+                    qualifier_counter |= CQualifierKind.Volatile
+                self.peek_token()  # peek the qualifier token
+
+            # handle struct, union, enum and typename identifier
+            # when parsing those specifiers the specifier count should be 0
+            if self.is_token_kind(tk.TokenKind.STRUCT) or \
+                    self.is_token_kind(tk.TokenKind.UNION) or \
+                    self.is_token_kind(tk.TokenKind.ENUM) or \
+                    self.is_token_kind(tk.TokenKind.IDENTIFIER):
+                if specifier_counter != 0:
+                    self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
+                                     eh.SpecifierQualifierListInvalid)
+
+                # TODO: implement and return the CSpecifierType
+                if self.is_token_kind(tk.TokenKind.STRUCT):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.UNION):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.ENUM):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
+                    assert False, "Not implemented"
+
+            current_specifier_kind: CSpecifierKind = self.token_to_seperator_kind()
+            if current_specifier_kind == CSpecifierKind.Signed or current_specifier_kind == current_specifier_kind.Unsigned:
+                specifier_counter |= current_specifier_kind
+            else:
+                specifier_counter += current_specifier_kind
+
+            specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {
+                CSpecifierKind.Void: CPrimitiveDataTypes.Void,
+
+                # char kinds
+                CSpecifierKind.Char: CPrimitiveDataTypes.Char,
+                CSpecifierKind.Signed + CSpecifierKind.Char: CPrimitiveDataTypes.Char,
+                CSpecifierKind.Unsigned + CSpecifierKind.Char: CPrimitiveDataTypes.UChar,
+                CSpecifierKind.Unsigned + CSpecifierKind.Char: CPrimitiveDataTypes.UChar,
+
+                # short kinds
+                CPrimitiveDataTypes.Short: CPrimitiveDataTypes.Short,
+                CSpecifierKind.Short + CSpecifierKind.Int: CPrimitiveDataTypes.Short,
+                CSpecifierKind.Signed + CSpecifierKind.Short: CPrimitiveDataTypes.Short,
+                CSpecifierKind.Signed + CSpecifierKind.Short + CSpecifierKind.Int: CPrimitiveDataTypes.Short,
+                CSpecifierKind.Unsigned + CSpecifierKind.Short: CPrimitiveDataTypes.UShort,
+                CSpecifierKind.Unsigned + CSpecifierKind.Short + CSpecifierKind.Int: CPrimitiveDataTypes.UShort,
+
+                # int X64WIN kinds
+                CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Signed: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Signed + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Long: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Signed + CSpecifierKind.Long: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Signed + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Unsigned: CPrimitiveDataTypes.UInt,
+                CSpecifierKind.Unsigned + CSpecifierKind.Int: CPrimitiveDataTypes.UInt,
+                CSpecifierKind.Unsigned + CSpecifierKind.Long: CPrimitiveDataTypes.Int,
+                CSpecifierKind.Unsigned + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+
+                # long kinds
+                CSpecifierKind.Long + CSpecifierKind.Long: CPrimitiveDataTypes.Long,
+                CSpecifierKind.Long + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Long,
+                CSpecifierKind.Signed + CSpecifierKind.Long + CSpecifierKind.Long: CPrimitiveDataTypes.Long,
+                CSpecifierKind.Signed + CSpecifierKind.Long + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Long,
+                CSpecifierKind.Unsigned + CSpecifierKind.Long + CSpecifierKind.Long: CPrimitiveDataTypes.ULong,
+                CSpecifierKind.Unsigned + CSpecifierKind.Long + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.ULong,
+
+                # float and double
+                CSpecifierKind.Float: CPrimitiveDataTypes.Float,
+                CSpecifierKind.Double: CPrimitiveDataTypes.Double,
+                CSpecifierKind.Long + CSpecifierKind.Double: CPrimitiveDataTypes.LongDouble,
+            }
+
+            specifier_type: CPrimitiveDataTypes = specifier_cases.get(specifier_counter)
+
+            if specifier_type is None:
+                self.fatal_token(self.current_token.index,
+                                 "Invalid specifier in that current contex",
+                                 eh.SpecifierQualifierListInvalid
+                                 )
+            else:
+                type = specifier_type
+
+            self.peek_token()  # peek the specifier token
+
+        if isinstance(type, NoneNode):
+            self.fatal_token(self.current_token.index,
+                             "Invalid specifier in that current contex",
+                             eh.SpecifierQualifierListInvalid
+                             )
+        else:
+            return type
+
+    def peek_parameter_declaration(self) -> CParameter:
+        declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()
+
     def peek_parameter_type_list(self) -> list[CParameter]:
         parameter_list: list[CParameter] = []
-        if self.is_token_kind()
+        while True:
+            if self.is_token_storage_class_specifier() or self.is_token_type_specifier() or self.is_token_type_qualifier():
+                parameter_declaration: CParameter = self.peek_parameter_declaration()
+                parameter_list.append(parameter_declaration)
+                if self.is_token_kind(tk.TokenKind.COMMA):
+                    self.peek_token()
+            elif self.is_token_kind(tk.TokenKind.ELLIPSIS):
+                assert False, "Not implemented"
+            else:
+                return parameter_list
 
     def peek_abstract_declarator(self) -> AbstractType:
         if self.is_direct_abstract_declarator():
@@ -374,16 +508,17 @@ class Parser:
         elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
             self.peek_token()  # peek opening parenthesis token
 
-            expression: Node = self.peek_expression()
-
-            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing curly brace",
-                                   eh.TokenExpected)
-
-            self.peek_token()  # peek closing parenthesis token
-
-            return expression
+            if not self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
+                expression: Node = self.peek_expression()
+                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expecting a closing parenthesis token",
+                                       eh.TokenExpected)
+                self.peek_token()  # peek closing parenthesis token
+                return expression
+            else:
+                self.peek_token()  # peek closing parenthesis token
+                return NoneNode()
         else:
-            raise eh.PrimaryExpressionNotFound("Expected a primary expression token")
+            self.fatal_token(self.current_token.index, "Expected a primary expression token", eh.PrimaryExpressionNotFound)
 
     def peek_postfix_expression(self) -> Node:
         primary_expression: Node = self.peek_primary_expression()

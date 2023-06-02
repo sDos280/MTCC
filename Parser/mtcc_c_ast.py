@@ -9,6 +9,14 @@ class CQualifierKind(enum.Flag):
     Volatile = enum.auto()
 
 
+class CStorageClassSpecifier(enum.Flag):
+    Typedef = enum.auto()
+    Extern = enum.auto()
+    Static = enum.auto()
+    Auto = enum.auto()
+    Register = enum.auto()
+
+
 class CSpecifierKind(enum.IntFlag):
     Void = 1 << 0
     Short = 1 << 2
@@ -184,14 +192,14 @@ class CCast:
 
 
 class CEnumMember:
-    def __init__(self, identifier: CIdentifier, const_expression: Node):
-        self.identifier: CIdentifier = identifier
+    def __init__(self, identifier: CIdentifier | NoneNode, const_expression: Node):
+        self.identifier: CIdentifier | NoneNode = identifier
         self.const_expression: Node = const_expression
 
     def to_dict(self):
         return {
             "node": "CEnumMember",
-            "name": self.identifier.token.string,
+            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "value": self.const_expression.to_dict()
         }
 
@@ -248,14 +256,14 @@ class CIdentifier:
 
 
 class Variable:
-    def __init__(self, identifier: CIdentifier, type):
-        self.identifier: CIdentifier = identifier
+    def __init__(self, identifier: CIdentifier | NoneNode, type):
+        self.identifier: CIdentifier | NoneNode = identifier
         self.type = type
 
     def to_dict(self):
         return {
             "node": "Variable",
-            "name": self.identifier,
+            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict()
         }
 
@@ -274,14 +282,14 @@ class Block:
 
 
 class CParameter:
-    def __init__(self, identifier: CIdentifier, type: CTypeName):
-        self.identifier: CIdentifier = identifier
+    def __init__(self, identifier: CIdentifier | NoneNode, type: CTypeName):
+        self.identifier: CIdentifier | NoneNode = identifier
         self.type: CTypeName = type
 
     def to_dict(self):
         return {
             "node": "CParameter",
-            "name": self.identifier,
+            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict()
         }
 
@@ -354,7 +362,7 @@ class CAbstractPointer:
 
 class CFunction:
     def __init__(self, identifier: CIdentifier | NoneNode, parameters: list[CParameter], return_type: CType):
-        self.identifier: CIdentifier = identifier
+        self.identifier: CIdentifier | NoneNode = identifier
         self.parameters: list[CParameter] = parameters
         self.return_type: CType = return_type
 

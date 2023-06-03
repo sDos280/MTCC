@@ -453,3 +453,47 @@ Node = Union[
     CAbstractArray,
     CParameter
 ]
+
+specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {
+    CSpecifierKind.Void: CPrimitiveDataTypes.Void,
+
+    # char kinds
+    CSpecifierKind.Char: CPrimitiveDataTypes.Char,
+    CSpecifierKind.Signed + CSpecifierKind.Char: CPrimitiveDataTypes.Char,
+    CSpecifierKind.Unsigned + CSpecifierKind.Char: CPrimitiveDataTypes.UChar,
+    CSpecifierKind.Unsigned + CSpecifierKind.Char: CPrimitiveDataTypes.UChar,
+
+    # short kinds
+    CPrimitiveDataTypes.Short: CPrimitiveDataTypes.Short,
+    CSpecifierKind.Short + CSpecifierKind.Int: CPrimitiveDataTypes.Short,
+    CSpecifierKind.Signed + CSpecifierKind.Short: CPrimitiveDataTypes.Short,
+    CSpecifierKind.Signed + CSpecifierKind.Short + CSpecifierKind.Int: CPrimitiveDataTypes.Short,
+    CSpecifierKind.Unsigned + CSpecifierKind.Short: CPrimitiveDataTypes.UShort,
+    CSpecifierKind.Unsigned + CSpecifierKind.Short + CSpecifierKind.Int: CPrimitiveDataTypes.UShort,
+
+    # int X64WIN kinds
+    CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Signed: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Signed + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Long: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Signed + CSpecifierKind.Long: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Signed + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Unsigned: CPrimitiveDataTypes.UInt,
+    CSpecifierKind.Unsigned + CSpecifierKind.Int: CPrimitiveDataTypes.UInt,
+    CSpecifierKind.Unsigned + CSpecifierKind.Long: CPrimitiveDataTypes.Int,
+    CSpecifierKind.Unsigned + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Int,
+
+    # long kinds
+    CSpecifierKind.Long + CSpecifierKind.Long: CPrimitiveDataTypes.Long,
+    CSpecifierKind.Long + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Long,
+    CSpecifierKind.Signed + CSpecifierKind.Long + CSpecifierKind.Long: CPrimitiveDataTypes.Long,
+    CSpecifierKind.Signed + CSpecifierKind.Long + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.Long,
+    CSpecifierKind.Unsigned + CSpecifierKind.Long + CSpecifierKind.Long: CPrimitiveDataTypes.ULong,
+    CSpecifierKind.Unsigned + CSpecifierKind.Long + CSpecifierKind.Long + CSpecifierKind.Int: CPrimitiveDataTypes.ULong,
+
+    # float and double
+    CSpecifierKind.Float: CPrimitiveDataTypes.Float,
+    CSpecifierKind.Double: CPrimitiveDataTypes.Double,
+    CSpecifierKind.Long + CSpecifierKind.Double: CPrimitiveDataTypes.LongDouble,
+}

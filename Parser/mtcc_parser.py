@@ -132,6 +132,14 @@ class Parser:
         """check if the current token is a direct declarator starter"""
         return self.is_token_kind([tk.TokenKind.IDENTIFIER, tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
 
+    def is_declarator(self) -> bool:
+        """check if the current token is a declarator starter"""
+        return self.is_token_kind([tk.TokenKind.ASTERISK, tk.TokenKind.IDENTIFIER, tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
+
+    def is_typedef_real(self, name: str) -> bool:
+        # TODO: check if the name is a typedef
+        return False
+
     def peek_token_type_qualifier(self) -> tk.Token:
         self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token",
                                eh.TypeQualifierNotFound)
@@ -185,19 +193,23 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                if specifier_counter != 0:
-                    self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
-                                     eh.SpecifierQualifierListInvalid)
+                # TODO: each if the identifier is typedef, if not break
+                if self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_real(self.current_token.string):
+                    if specifier_counter != 0:
+                        self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
+                                         eh.SpecifierQualifierListInvalid)
 
-                # TODO: implement and return the CSpecifierType
-                if self.is_token_kind(tk.TokenKind.STRUCT):
-                    assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.UNION):
-                    assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.ENUM):
-                    assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                    assert False, "Not implemented"
+                    # TODO: implement and return the CSpecifierType
+                    if self.is_token_kind(tk.TokenKind.STRUCT):
+                        assert False, "Not implemented"
+                    elif self.is_token_kind(tk.TokenKind.UNION):
+                        assert False, "Not implemented"
+                    elif self.is_token_kind(tk.TokenKind.ENUM):
+                        assert False, "Not implemented"
+                    elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
+                        assert False, "Not implemented"
+                else:
+                    return type
 
             current_specifier_kind: CSpecifierKind = self.token_to_seperator_kind()
             if current_specifier_kind == CSpecifierKind.Signed or current_specifier_kind == current_specifier_kind.Unsigned:
@@ -499,6 +511,10 @@ class Parser:
                              )
 
         declarator: CDeclarator = CDeclarator(identifier, NoneNode())
+
+        if not self.is_direct_abstract_declarator():
+            return declarator
+
         direct_declarator_module: Node | list[CParameter] = self.peek_direct_declarator_module()
 
         if isinstance(direct_declarator_module, list):  # need to convert direct_declarator_module to CFunction
@@ -529,6 +545,26 @@ class Parser:
 
     def peek_parameter_declaration(self) -> CParameter:
         declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()
+
+        declarator_or_abstract_declarator: CDeclarator | NoneNode = NoneNode()
+        # TODO: make this "checking" better
+        current_index: int = self.current_token.index
+        try:
+            declarator_or_abstract_declarator = self.peek_declarator()
+        except:
+            self.set_index_token(current_index)
+            declarator_or_abstract_declarator = self.peek_abstract_declarator()
+
+        if not isinstance(declarator_or_abstract_declarator, NoneNode):
+            hh = declarator_or_abstract_declarator.get_child_bottom()
+            hh.child = declaration_specifiers
+
+            return declarator_or_abstract_declarator
+        else:
+            self.fatal_token(self.current_token.index,
+                             "Expected declarator or abstract declarator",
+                             eh.TokenExpected
+                             )
 
     def peek_parameter_type_list(self) -> list[CParameter]:
         parameter_list: list[CParameter] = []

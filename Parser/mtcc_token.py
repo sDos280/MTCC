@@ -121,6 +121,7 @@ string_to_keyword: dict[str, TokenKind] = {
     "const": TokenKind.CONST,
     "break": TokenKind.BREAK,
     "enum": TokenKind.ENUM,
+    "void": TokenKind.VOID,
     "auto": TokenKind.AUTO,
     "goto": TokenKind.GOTO,
     "else": TokenKind.ELSE,

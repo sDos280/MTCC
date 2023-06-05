@@ -17,6 +17,7 @@ class Parser:
         self.current_block: Block | None = None
 
         self.enums: list[CEnum] = []
+        self.typedefs: list[CTypedef] = []
         self.variables: list[Variable] = []  # variables declension list
         self.function_declension: list[CFunction] = []
         self.function: list[CFunction]  # functions ast code
@@ -133,8 +134,10 @@ class Parser:
         """check if the current token is a declarator starter"""
         return self.is_token_kind([tk.TokenKind.ASTERISK, tk.TokenKind.IDENTIFIER, tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
 
-    def is_typedef_real(self, name: str) -> bool:
-        # TODO: check if the name is a typedef
+    def is_typedef_name(self, name: str) -> bool:
+        for typedef in self.typedefs:
+            if typedef.name.token.string == name:
+                return True
         return False
 
     def peek_token_type_qualifier(self) -> tk.Token:
@@ -168,7 +171,58 @@ class Parser:
         self.peek_token()  # peek the token
         return token
 
+    def peek_storage_class_specifier(self) -> CStorageClassSpecifier:
+        """
+        parse a storage class specifier
+        storage_class_specifier
+            : TYPEDEF
+            | EXTERN
+            | STATIC
+            | AUTO
+            | REGISTER
+            ;
+        :return:  a storage class specifier node
+        """
+        self.expect_token_kind(
+            [
+                tk.TokenKind.TYPEDEF,
+                tk.TokenKind.EXTERN,
+                tk.TokenKind.STATIC,
+                tk.TokenKind.AUTO,
+                tk.TokenKind.REGISTER
+            ],
+            "Expected a storage class specifier token",
+            eh.TokenExpected
+        )
+
+        storage_class_specifier: CStorageClassSpecifier = CStorageClassSpecifier(0)
+        if self.is_token_kind(tk.TokenKind.TYPEDEF):
+            storage_class_specifier = CStorageClassSpecifier.Typedef
+        elif self.is_token_kind(tk.TokenKind.EXTERN):
+            storage_class_specifier = CStorageClassSpecifier.Extern
+        elif self.is_token_kind(tk.TokenKind.STATIC):
+            storage_class_specifier = CStorageClassSpecifier.Static
+        elif self.is_token_kind(tk.TokenKind.AUTO):
+            storage_class_specifier = CStorageClassSpecifier.Auto
+        elif self.is_token_kind(tk.TokenKind.REGISTER):
+            storage_class_specifier = CStorageClassSpecifier.Register
+
+        self.peek_token()  # peek storage class specifier token
+
+        return storage_class_specifier
+
     def peek_specifier_qualifier_list(self) -> CSpecifierType:
+        """
+        parse a specifier qualifier list
+        specifier_qualifier_list
+            : type_specifier specifier_qualifier_list
+            | type_specifier
+            | type_qualifier specifier_qualifier_list
+            | type_qualifier
+            ;
+        :return: a specifier type node
+        """
+
         # the idea is form https://github.com/sgraham/dyibicc/blob/main/src/parse.c#L359
         specifier_counter: CSpecifierKind = CSpecifierKind(0)
         qualifier_counter: CQualifierKind = CQualifierKind(0)
@@ -191,7 +245,7 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
                 # TODO: each if the identifier is typedef, if not break
-                if self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_real(self.current_token.string):
+                if self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string):
                     if specifier_counter != 0:
                         self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                          eh.SpecifierQualifierListInvalid)
@@ -235,16 +289,36 @@ class Parser:
             return type
 
     def peek_type_name(self) -> CTypeName:
+        """
+        parse a type name
+        type_name
+            : specifier_qualifier_list
+            | specifier_qualifier_list abstract_declarator
+            ;
+        :return: a type name node
+        """
         specified_qualifier: CSpecifierType = self.peek_specifier_qualifier_list()
 
-        abstract_declarator: AbstractType = NoneNode()
+        abstract_declarator: CType = NoneNode()
         if self.is_abstract_declarator():
-            abstract_declarator: AbstractType = self.peek_abstract_declarator()
+            abstract_declarator: CType = self.peek_abstract_declarator()
             abstract_declarator.get_child_bottom().child = specified_qualifier
 
-        return CTypeName(False, False, abstract_declarator if not isinstance(abstract_declarator, NoneNode) else specified_qualifier)
+        return CTypeName(abstract_declarator if not isinstance(abstract_declarator, NoneNode) else specified_qualifier)
 
     def peek_declaration_specifiers(self) -> CSpecifierType:
+        """
+        parse a declaration specifier
+        declaration_specifiers
+            : storage_class_specifier
+            | storage_class_specifier declaration_specifiers
+            | type_specifier
+            | type_specifier declaration_specifiers
+            | type_qualifier
+            | type_qualifier declaration_specifiers
+            ;
+        :return: a specifier type node
+        """
         # the idea is form https://github.com/sgraham/dyibicc/blob/main/src/parse.c#L359
         storage_class_specifier_counter: CStorageClassSpecifier = CStorageClassSpecifier(0)
         specifier_counter: CSpecifierKind = CSpecifierKind(0)
@@ -255,17 +329,7 @@ class Parser:
             # handle storage class specifiers
             # TODO: make a way that those qualifiers will be really used
             if self.is_token_storage_class_specifier():
-                if self.is_token_kind(tk.TokenKind.TYPEDEF):
-                    storage_class_specifier_counter |= CStorageClassSpecifier.Typedef
-                elif self.is_token_kind(tk.TokenKind.EXTERN):
-                    storage_class_specifier_counter |= CStorageClassSpecifier.Extern
-                elif self.is_token_kind(tk.TokenKind.STATIC):
-                    storage_class_specifier_counter |= CStorageClassSpecifier.Static
-                elif self.is_token_kind(tk.TokenKind.AUTO):
-                    storage_class_specifier_counter |= CStorageClassSpecifier.Auto
-                elif self.is_token_kind(tk.TokenKind.REGISTER):
-                    storage_class_specifier_counter |= CStorageClassSpecifier.Register
-                self.peek_token()
+                storage_class_specifier_counter |= self.peek_storage_class_specifier()
 
             # handel qualifiers
             # TODO: make a way that those qualifiers will be really used
@@ -323,6 +387,14 @@ class Parser:
             return type
 
     def peek_type_qualifier_list(self) -> CQualifierKind:
+        """
+        parse a type qualifier list
+        type_qualifier_list
+            : type_qualifier
+            | type_qualifier_list type_qualifier
+            ;
+        :return: a qualifier kind node
+        """
         qualifier_counter: CQualifierKind = CQualifierKind(0)
         while self.is_token_type_qualifier():
             if self.is_token_kind(tk.TokenKind.CONST):
@@ -334,6 +406,16 @@ class Parser:
         return qualifier_counter
 
     def peek_pointer(self) -> CPointer:
+        """
+        parse a pointer
+        pointer
+            : '*'
+            | '*' type_qualifier_list
+            | '*' pointer
+            | '*' type_qualifier_list pointer
+            ;
+        :return: a pointer node
+        """
         pointer: CPointer = CPointer(0, CQualifierKind(0), NoneNode())
         pointer_counter: int = 0
 
@@ -352,14 +434,16 @@ class Parser:
 
     def peek_direct_declarator_module(self) -> Node | list[CParameter]:
         """
-                direct_declarator_module
+        parse a direct declarator module
+        direct_declarator_module
                     : '(' declarator ')'
                     | '[' constant_expression ']'
                     | '[' ']'
                     | '(' parameter_type_list ')'
                     | '(' ')'
                     ;
-                """
+        :return: a direct declarator module node
+        """
         if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
             self.peek_token()  # peek ( token
             if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
@@ -384,14 +468,14 @@ class Parser:
             self.peek_token()  # peek [ token
             if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
                 self.peek_token()  # peek ] token
-                return CAbstractArray(NoneNode(), NoneNode())
+                return CArray(NoneNode(), NoneNode())
 
             constant_expression: Node = self.peek_constant_expression()
 
             self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected closing bracket", eh.TokenExpected)
             self.peek_token()  # peek ] token
 
-            return CAbstractArray(constant_expression, NoneNode())
+            return CArray(constant_expression, NoneNode())
         else:
             self.fatal_token(self.current_token.index,
                              "Expected opening parenthesis or opening bracket",
@@ -399,18 +483,31 @@ class Parser:
                              )
 
     def peek_direct_declarator(self) -> CDeclarator:
+        """
+        parse a direct declarator
+        direct_declarator
+            : IDENTIFIER
+            | '(' declarator ')'
+            | direct_declarator '[' constant_expression ']'
+            | direct_declarator '[' ']'
+            | direct_declarator '(' parameter_type_list ')'
+            | direct_declarator '(' identifier_list ')'
+            | direct_declarator '(' ')'
+            ;
+        :return: a direct declarator node
+        """
         identifier: CIdentifier | NoneNode = NoneNode()
         if self.is_direct_declarator():
             if self.is_token_kind(tk.TokenKind.IDENTIFIER):
                 identifier = CIdentifier(self.current_token)
                 self.peek_token()  # peek the identifier token
             elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-                self.peek_token()  # peek the opening parenthesis token
+                self.peek_token()  # peek the ( token
 
                 declarator: CDeclarator = self.peek_declarator()
 
                 self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
-                self.peek_token()  # peek the closing parenthesis token
+                self.peek_token()  # peek the ) token
 
                 return declarator
         else:
@@ -433,7 +530,7 @@ class Parser:
 
         while True:
             if self.is_direct_abstract_declarator():
-                direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
+                direct_abstract_declarator_module: CType = self.peek_direct_abstract_declarator_module()
                 if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
                     declarator.get_child_bottom().child = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
                 else:
@@ -442,6 +539,14 @@ class Parser:
                 return declarator
 
     def peek_declarator(self) -> CDeclarator:
+        """
+        parse a declarator
+        declarator
+            : pointer direct_declarator
+            | direct_declarator
+            ;
+        :return: a declarator node
+        """
         pointer: CPointer | NoneNode = NoneNode()
         if self.is_token_kind(tk.TokenKind.ASTERISK):
             pointer = self.peek_pointer()
@@ -453,6 +558,14 @@ class Parser:
         return direct_declarator
 
     def peek_parameter_declaration(self) -> CParameter:
+        """
+        parse a parameter declaration
+        parameter_declaration
+            : declaration_specifiers declarator
+            | declaration_specifiers abstract_declarator
+            | declaration_specifiers
+        :return: a parameter declaration node
+        """
         declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()
 
         declarator_or_abstract_declarator: CDeclarator | NoneNode = NoneNode()
@@ -465,8 +578,7 @@ class Parser:
             declarator_or_abstract_declarator = self.peek_abstract_declarator()
 
         if not isinstance(declarator_or_abstract_declarator, NoneNode):
-            hh = declarator_or_abstract_declarator.get_child_bottom()
-            hh.child = declaration_specifiers
+            declarator_or_abstract_declarator.get_child_bottom().child = declaration_specifiers
 
             return declarator_or_abstract_declarator
         else:
@@ -476,6 +588,14 @@ class Parser:
                              )
 
     def peek_parameter_type_list(self) -> list[CParameter]:
+        """
+        parse a parameter type list
+        parameter_type_list
+            : parameter_list ',' ELLIPSIS
+            | parameter_list
+            ;
+        :return: a list of parameter nodes
+        """
         parameter_list: list[CParameter] = []
         while True:
             if self.is_token_storage_class_specifier() or self.is_token_type_specifier() or self.is_token_type_qualifier():
@@ -488,7 +608,16 @@ class Parser:
             else:
                 return parameter_list
 
-    def peek_abstract_declarator(self) -> AbstractType:
+    def peek_abstract_declarator(self) -> CType:
+        """
+        parse an abstract declarator
+        abstract_declarator
+            : pointer
+            | direct_abstract_declarator
+            | pointer direct_abstract_declarator
+            ;
+        :return: an abstract declarator node
+        """
         if self.is_direct_abstract_declarator():
             return self.peek_direct_abstract_declarator()
         elif self.is_token_kind(tk.TokenKind.ASTERISK):
@@ -498,22 +627,22 @@ class Parser:
                 pointer_level += 1
 
             if self.is_direct_abstract_declarator():
-                direct_abstract_declarator: AbstractType = self.peek_direct_abstract_declarator()
-                direct_abstract_declarator.get_child_bottom().child = CAbstractPointer(pointer_level, NoneNode())
+                direct_abstract_declarator: CType = self.peek_direct_abstract_declarator()
+                direct_abstract_declarator.get_child_bottom().child = CPointer(pointer_level, CQualifierKind(0), NoneNode())
                 return direct_abstract_declarator
             else:
-                return CAbstractPointer(pointer_level, NoneNode())
+                return CPointer(pointer_level, CQualifierKind(0), NoneNode())
 
-    def peek_direct_abstract_declarator(self) -> AbstractType:
+    def peek_direct_abstract_declarator(self) -> CType:
         # return the top and bottom of the direct abstract declarator
-        direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
+        direct_abstract_declarator_module: CType = self.peek_direct_abstract_declarator_module()
         if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
             direct_abstract_declarator_module = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
-        direct_abstract_declarator: AbstractType = direct_abstract_declarator_module
+        direct_abstract_declarator: CType = direct_abstract_declarator_module
 
         while True:
             if self.is_direct_abstract_declarator():
-                direct_abstract_declarator_module: AbstractType = self.peek_direct_abstract_declarator_module()
+                direct_abstract_declarator_module: CType = self.peek_direct_abstract_declarator_module()
                 if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
                     direct_abstract_declarator.get_child_bottom().child = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
                 else:
@@ -521,8 +650,9 @@ class Parser:
             else:
                 return direct_abstract_declarator
 
-    def peek_direct_abstract_declarator_module(self) -> AbstractType | list[CParameter]:
+    def peek_direct_abstract_declarator_module(self) -> CType | list[CParameter]:
         """
+        parse a direct abstract declarator module
         direct_abstract_declarator_module
             : '(' abstract_declarator ')'
             | '[' ']'
@@ -530,6 +660,7 @@ class Parser:
             | '(' ')'
             | '(' parameter_type_list ')'
             ;
+        :return: a direct abstract declarator module node
         """
         if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
             self.peek_token()  # peek ( token
@@ -547,7 +678,7 @@ class Parser:
                     return parameter_type_list
                 except:
                     self.set_index_token(index_before_peek)
-                    abstract_declarator: AbstractType = self.peek_abstract_declarator()
+                    abstract_declarator: CType = self.peek_abstract_declarator()
                     self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
                     self.peek_token()  # peek ) token
 
@@ -557,16 +688,26 @@ class Parser:
             if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
                 self.peek_token()  # peek ] token
 
-                return CAbstractArray(NoneNode(), NoneNode())
+                return CArray(NoneNode(), NoneNode())
             else:
                 constant_expression: Node = self.peek_constant_expression()
                 self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected a ] token", eh.TokenExpected)
                 self.peek_token()  # peek ] token
-                return CAbstractArray(constant_expression, NoneNode())
+                return CArray(constant_expression, NoneNode())
         else:
             self.fatal_token(self.current_token.index, "Expected a ( or [ token", eh.TokenExpected)
 
     def peek_primary_expression(self) -> Node:
+        """
+        parse a primary expression
+        primary_expression
+            : IDENTIFIER
+            | constant
+            | string
+            | '(' expression ')'
+            ;
+        :return: a primary expression node
+        """
         if self.is_token_kind(tk.TokenKind.INTEGER_LITERAL):
             number: Number = Number(int(self.current_token.string))
             self.peek_token()  # peek integer literal number
@@ -599,6 +740,20 @@ class Parser:
             self.fatal_token(self.current_token.index, "Expected a primary expression token", eh.PrimaryExpressionNotFound)
 
     def peek_postfix_expression(self) -> Node:
+        """
+        parse a postfix expression
+        postfix_expression
+            : primary_expression
+            | postfix_expression '[' expression ']'
+            | postfix_expression '(' ')'
+            | postfix_expression '(' argument_expression_list ')'
+            | postfix_expression '.' IDENTIFIER
+            | postfix_expression PTR_OP IDENTIFIER
+            | postfix_expression INC_OP
+            | postfix_expression DEC_OP
+            ;
+        :return:
+        """
         primary_expression: Node = self.peek_primary_expression()
 
         if not isinstance(primary_expression, CIdentifier):
@@ -629,6 +784,18 @@ class Parser:
         assert False, "Not implemented"
 
     def peek_unary_expression(self) -> Node:
+        """
+        parse a unary expression
+        unary_expression
+            : postfix_expression
+            | INC_OP unary_expression
+            | DEC_OP unary_expression
+            | unary_operator cast_expression
+            | SIZEOF unary_expression
+            | SIZEOF '(' type_name ')'
+            ;
+        :return: a unary expression node
+        """
         if self.is_token_kind(tk.TokenKind.INC_OP):
             assert False, "Not implemented"
         elif self.is_token_kind(tk.TokenKind.DEC_OP):

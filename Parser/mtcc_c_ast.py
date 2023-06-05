@@ -4,7 +4,7 @@ import enum
 import Parser.mtcc_token as tk
 
 
-class CQualifierKind(enum.Flag):
+class CQualifierKind(enum.IntFlag):
     Const = enum.auto()
     Volatile = enum.auto()
 
@@ -15,7 +15,7 @@ class CQualifierKind(enum.Flag):
         }
 
 
-class CStorageClassSpecifier(enum.Flag):
+class CStorageClassSpecifier(enum.IntFlag):
     Typedef = enum.auto()
     Extern = enum.auto()
     Static = enum.auto()
@@ -72,20 +72,25 @@ class CUnion:
 
 
 class CTypedef:
-    pass
+    def __init__(self, name: CIdentifier, type_name: CTypeName):
+        self.name: CIdentifier = name
+        self.type_name: CTypeName = type_name
+
+    def to_dict(self):
+        return {
+            "node": "CTypedef",
+            "name": self.name.to_dict(),
+            "type_name": self.type_name.to_dict()
+        }
 
 
 class CTypeName:
-    def __init__(self, is_const: bool, is_volatile: bool, type: CSpecifierType | AbstractType):
-        self.is_const: bool = is_const
-        self.is_volatile: bool = is_volatile
-        self.type: CSpecifierType | AbstractType = type
+    def __init__(self, type: CSpecifierType | CType):
+        self.type: CSpecifierType | CType = type
 
     def to_dict(self):
         return {
             "node": "CTypeName",
-            "is_const": self.is_const,
-            "is_volatile": self.is_volatile,
             "type": self.type.to_dict()
         }
 
@@ -288,9 +293,17 @@ class Block:
 
 
 class CDeclarator:
-    def __init__(self, identifier: CIdentifier | NoneNode, type: Node):
+    def __init__(self, identifier: CIdentifier | NoneNode, type: CType):
         self.identifier: CIdentifier | NoneNode = identifier
-        self.type: Node = type
+        self.type: CType = type
+
+    @property
+    def child(self) -> CType:
+        return self.type
+
+    @child.setter
+    def child(self, value: CType):
+        self.type = value
 
     def to_dict(self):
         return {
@@ -300,57 +313,57 @@ class CDeclarator:
         }
 
     def get_child_bottom(self) -> Node:
-        return self.type.get_child_bottom()
+        return self.type.get_child_bottom() if not isinstance(self.type, NoneNode) else self
 
 
-class CAbstractArray:
-    def __init__(self, size: Node, array_of: AbstractType):
+class CArray:
+    def __init__(self, size: Node, array_of: CType):
         self.size: Node = size
-        self.__array_of: AbstractType = array_of
+        self.__array_of: CType = array_of
 
     def to_dict(self):
         return {
-            "node": "CAbstractArray",
+            "node": "CArray",
             "size": self.size.to_dict(),
             "array_of": self.__array_of.to_dict()
         }
 
-    def get_child_bottom(self) -> AbstractType:
+    def get_child_bottom(self) -> CType:
         try:
             return self.child.get_child_bottom()
         except AttributeError:
             return self.child if not isinstance(self.child, NoneNode) else self
 
     @property
-    def child(self) -> AbstractType:
+    def child(self) -> CType:
         return self.__array_of
 
     @child.setter
-    def child(self, value: AbstractType):
+    def child(self, value: CType):
         self.__array_of = value
 
     def copy(self):
-        return CAbstractArray(self.size, self.__array_of)
+        return CArray(self.size, self.__array_of)
 
     def get_bottom_not_array(self):
-        if isinstance(self.child, CAbstractArray):
+        if isinstance(self.child, CArray):
             return self.child.get_bottom_not_array()
         else:
             return self.child
 
 
 class CPointer:
-    def __init__(self, pointer_level: int, qualifiers: CQualifierKind, pointer_of: AbstractType):
+    def __init__(self, pointer_level: int, qualifiers: CQualifierKind, pointer_of: CType):
         self.pointer_level: int = pointer_level
         self.qualifiers: CQualifierKind = qualifiers
-        self.__pointer_of: AbstractType = pointer_of
+        self.__pointer_of: CType = pointer_of
 
     @property
-    def child(self) -> AbstractType:
+    def child(self) -> CType:
         return self.__pointer_of
 
     @child.setter
-    def child(self, value: AbstractType):
+    def child(self, value: CType):
         self.__pointer_of = value
 
     def to_dict(self):
@@ -361,35 +374,11 @@ class CPointer:
             "pointer_of": self.child.to_dict()
         }
 
-
-class CAbstractPointer:
-    def __init__(self, pointer_level: int, pointer_of: AbstractType):
-        self.pointer_level: int = pointer_level
-        self.__pointer_of: AbstractType = pointer_of
-
-    def to_dict(self):
-        return {
-            "node": "CAbstractPointer",
-            "pointer_level": self.pointer_level,
-            "pointer_of": self.__pointer_of.to_dict()
-        }
-
-    def get_child_bottom(self) -> AbstractType:
+    def get_child_bottom(self) -> CType:
         try:
             return self.child.get_child_bottom()
         except AttributeError:
             return self.child if not isinstance(self.child, NoneNode) else self
-
-    @property
-    def child(self) -> AbstractType:
-        return self.__pointer_of
-
-    @child.setter
-    def child(self, value: AbstractType):
-        self.__pointer_of = value
-
-    def copy(self):
-        return self
 
 
 class CFunction:
@@ -428,8 +417,7 @@ class FunctionCall:
 
 
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
-AbstractType = Union[CFunction, CAbstractPointer, CAbstractArray, NoneNode]
-CType = Union[CFunction, CAbstractPointer, CAbstractArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
+CType = Union[CFunction, CPointer, CArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CParameter = CDeclarator
 
 Node = Union[
@@ -447,10 +435,8 @@ Node = Union[
     CCast,
     FunctionCall,
     CPointer,
-    CAbstractPointer,
-    CAbstractArray,
+    CArray,
     CFunction,
-    CAbstractArray,
     CParameter
 ]
 

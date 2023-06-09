@@ -247,7 +247,7 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                if specifier_counter != 0:
+                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string)):
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 

@@ -95,28 +95,6 @@ class Parser:
         if not self.is_token_kind(kind):
             self.fatal_token(self.index, error_string, raise_exception)
 
-    def token_to_seperator_kind(self) -> CSpecifierKind:
-        if self.is_token_kind(tk.TokenKind.VOID):
-            return CSpecifierKind.Void
-        elif self.is_token_kind(tk.TokenKind.SHORT):
-            return CSpecifierKind.Short
-        elif self.is_token_kind(tk.TokenKind.CHAR):
-            return CSpecifierKind.Char
-        elif self.is_token_kind(tk.TokenKind.INT):
-            return CSpecifierKind.Int
-        elif self.is_token_kind(tk.TokenKind.LONG):
-            return CSpecifierKind.Long
-        elif self.is_token_kind(tk.TokenKind.FLOAT):
-            return CSpecifierKind.Float
-        elif self.is_token_kind(tk.TokenKind.DOUBLE):
-            return CSpecifierKind.Double
-        elif self.is_token_kind(tk.TokenKind.SIGNED):
-            return CSpecifierKind.Signed
-        elif self.is_token_kind(tk.TokenKind.UNSIGNED):
-            return CSpecifierKind.Unsigned
-        else:
-            return CSpecifierKind(0)
-
     def is_abstract_declarator(self) -> bool:
         """check if the current token is an abstract declarator starter"""
         return self.is_token_kind(
@@ -140,14 +118,22 @@ class Parser:
                 return True
         return False
 
-    def peek_token_type_qualifier(self) -> tk.Token:
+    def peek_type_qualifier(self) -> CQualifierKind:
         self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token",
                                eh.TypeQualifierNotFound)
-        token: tk.Token = self.current_token
-        self.peek_token()  # peek the token
-        return token
 
-    def peek_token_type_specifier(self) -> tk.Token:
+        qualifier: CQualifierKind = CQualifierKind(0)
+
+        if self.is_token_kind(tk.TokenKind.CONST):
+            qualifier = CQualifierKind.Const
+        elif self.is_token_kind(tk.TokenKind.VOLATILE):
+            qualifier = CQualifierKind.Volatile
+
+        self.peek_token()  # peek qualifier token
+
+        return qualifier
+
+    def peek_type_specifier(self) -> CSpecifierKind:
         self.expect_token_kind(
             [
                 tk.TokenKind.VOID,
@@ -167,9 +153,30 @@ class Parser:
             "Expected a type specifier token",
             eh.TypeSpecifierNotFound
         )
-        token: tk.Token = self.current_token
-        self.peek_token()  # peek the token
-        return token
+        specifier: CSpecifierKind = CSpecifierKind(0)
+
+        if self.is_token_kind(tk.TokenKind.VOID):
+            specifier = CSpecifierKind.Void
+        elif self.is_token_kind(tk.TokenKind.SHORT):
+            specifier = CSpecifierKind.Short
+        elif self.is_token_kind(tk.TokenKind.CHAR):
+            specifier = CSpecifierKind.Char
+        elif self.is_token_kind(tk.TokenKind.INT):
+            specifier = CSpecifierKind.Int
+        elif self.is_token_kind(tk.TokenKind.LONG):
+            specifier = CSpecifierKind.Long
+        elif self.is_token_kind(tk.TokenKind.FLOAT):
+            specifier = CSpecifierKind.Float
+        elif self.is_token_kind(tk.TokenKind.DOUBLE):
+            specifier = CSpecifierKind.Double
+        elif self.is_token_kind(tk.TokenKind.SIGNED):
+            specifier = CSpecifierKind.Signed
+        elif self.is_token_kind(tk.TokenKind.UNSIGNED):
+            specifier = CSpecifierKind.Unsigned
+
+        self.peek_token()  # peek specifier token
+
+        return specifier
 
     def peek_storage_class_specifier(self) -> CStorageClassSpecifier:
         """
@@ -232,11 +239,7 @@ class Parser:
             # handel qualifiers
             # TODO: make a way that those qualifiers will be really used
             if self.is_token_type_qualifier():
-                if self.is_token_kind(tk.TokenKind.CONST):
-                    qualifier_counter |= CQualifierKind.Const
-                elif self.is_token_kind(tk.TokenKind.VOLATILE):
-                    qualifier_counter |= CQualifierKind.Volatile
-                self.peek_token()  # peek the qualifier token
+                qualifier_counter |= self.peek_type_qualifier()
 
             # handle struct, union, enum and typename identifier
             # when parsing those specifiers the specifier count should be 0
@@ -262,8 +265,9 @@ class Parser:
                 else:
                     return type
 
-            current_specifier_kind: CSpecifierKind = self.token_to_seperator_kind()
-            if current_specifier_kind == CSpecifierKind.Signed or current_specifier_kind == current_specifier_kind.Unsigned:
+            current_specifier_kind: CSpecifierKind = self.peek_type_specifier()
+            if current_specifier_kind == CSpecifierKind.Signed or \
+                    current_specifier_kind == current_specifier_kind.Unsigned:
                 specifier_counter |= current_specifier_kind
             else:
                 specifier_counter += current_specifier_kind
@@ -277,8 +281,6 @@ class Parser:
                                  )
             else:
                 type = specifier_type
-
-            self.peek_token()  # peek the specifier token
 
         if isinstance(type, NoneNode):
             self.fatal_token(self.current_token.index,
@@ -334,11 +336,7 @@ class Parser:
             # handel qualifiers
             # TODO: make a way that those qualifiers will be really used
             if self.is_token_type_qualifier():
-                if self.is_token_kind(tk.TokenKind.CONST):
-                    qualifier_counter |= CQualifierKind.Const
-                elif self.is_token_kind(tk.TokenKind.VOLATILE):
-                    qualifier_counter |= CQualifierKind.Volatile
-                self.peek_token()  # peek the qualifier token
+                qualifier_counter |= self.peek_type_qualifier()
 
             # handle struct, union, enum and typename identifier
             # when parsing those specifiers the specifier count should be 0
@@ -360,7 +358,7 @@ class Parser:
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
                     assert False, "Not implemented"
 
-            current_specifier_kind: CSpecifierKind = self.token_to_seperator_kind()
+            current_specifier_kind: CSpecifierKind = self.peek_type_specifier()
             if current_specifier_kind == CSpecifierKind.Signed or current_specifier_kind == current_specifier_kind.Unsigned:
                 specifier_counter |= current_specifier_kind
             else:
@@ -375,8 +373,6 @@ class Parser:
                                  )
             else:
                 type = specifier_type
-
-            self.peek_token()  # peek the specifier token
 
         if isinstance(type, NoneNode):
             self.fatal_token(self.current_token.index,
@@ -450,20 +446,21 @@ class Parser:
                 self.peek_token()  # peek ) token
                 return list[CParameter]()
 
-            try:
-                declarator: CDeclarator = self.peek_declarator()
-
-                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
-                self.peek_token()  # peek ) token
-
-                return declarator
-            except:
+            if self.is_token_type_specifier() or self.is_token_type_qualifier():
                 parameter_type_list: list[CParameter] = self.peek_parameter_type_list()
 
                 self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
                 self.peek_token()  # peek ) token
 
                 return parameter_type_list
+            else:
+                declarator: CDeclarator = self.peek_declarator()
+
+                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
+                self.peek_token()  # peek ) token
+
+                return declarator
+
         elif self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
             self.peek_token()  # peek [ token
             if self.is_token_kind(tk.TokenKind.CLOSING_BRACKET):
@@ -484,14 +481,14 @@ class Parser:
 
     def peek_direct_declarator(self) -> CDeclarator:
         """
-        parse a direct declarator
+        parse a direct declarator, if no IDENTIFIER is found, it will return an empty named direct declarator
         direct_declarator
             : IDENTIFIER
             | '(' declarator ')'
             | direct_declarator '[' constant_expression ']'
             | direct_declarator '[' ']'
             | direct_declarator '(' parameter_type_list ')'
-            | direct_declarator '(' identifier_list ')'
+            | direct_declarator '(' identifier_list ')'   # we would not support this
             | direct_declarator '(' ')'
             ;
         :return: a direct declarator node
@@ -568,14 +565,10 @@ class Parser:
         """
         declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()
 
-        declarator_or_abstract_declarator: CDeclarator | NoneNode = NoneNode()
-        # TODO: make this "checking" better
-        current_index: int = self.current_token.index
-        try:
-            declarator_or_abstract_declarator = self.peek_declarator()
-        except:
-            self.set_index_token(current_index)
-            declarator_or_abstract_declarator = self.peek_abstract_declarator()
+        if not (self.is_abstract_declarator() or self.is_declarator()):
+            return CParameter(CIdentifier(None), declaration_specifiers)
+
+        declarator_or_abstract_declarator: CDeclarator | NoneNode = self.peek_declarator()
 
         if not isinstance(declarator_or_abstract_declarator, NoneNode):
             declarator_or_abstract_declarator.get_child_bottom().child = declaration_specifiers
@@ -669,15 +662,13 @@ class Parser:
 
                 return list[CParameter]()
             else:
-                index_before_peek: int = self.current_token.index
-                try:
+                if self.is_token_type_specifier() or self.is_token_type_qualifier():
                     parameter_type_list: list[CParameter] = self.peek_parameter_type_list()
                     self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
                     self.peek_token()  # peek ) token
 
                     return parameter_type_list
-                except:
-                    self.set_index_token(index_before_peek)
+                else:
                     abstract_declarator: CType = self.peek_abstract_declarator()
                     self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
                     self.peek_token()  # peek ) token

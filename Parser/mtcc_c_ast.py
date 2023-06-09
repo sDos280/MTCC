@@ -210,7 +210,7 @@ class CEnumMember:
     def to_dict(self):
         return {
             "node": "CEnumMember",
-            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "value": self.const_expression.to_dict()
         }
 
@@ -262,8 +262,11 @@ class CIdentifier:
             "token": self.token.string
         } if self.token is not None else {
             "node": "CIdentifier",
-            "token": None
+            "token": ""
         }
+
+    def __str__(self):
+        return self.token.string if self.token is not None else ""
 
 
 class Variable:
@@ -274,7 +277,7 @@ class Variable:
     def to_dict(self):
         return {
             "node": "Variable",
-            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict()
         }
 
@@ -308,7 +311,7 @@ class CDeclarator:
     def to_dict(self):
         return {
             "node": "CDeclarator",
-            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict()
         }
 
@@ -390,7 +393,7 @@ class CFunction:
     def to_dict(self):
         return {
             "node": "CFunction",
-            "name": self.identifier.token.string if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "parameters": [parameter.to_dict() for parameter in self.parameters],
             "return_type": self.return_type.to_dict()
         }

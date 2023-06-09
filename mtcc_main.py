@@ -13,4 +13,4 @@ if __name__ == '__main__':
 
     parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
 
-    parser.parse()
+    parser.translation_unit()

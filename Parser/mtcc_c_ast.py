@@ -296,7 +296,7 @@ class Block:
 
 
 class CDeclarator:
-    def __init__(self, identifier: CIdentifier | NoneNode, type: CType):
+    def __init__(self, identifier: CIdentifier | NoneNode, type: CType, initializer: Node | list[Node] = NoneNode()):
         self.identifier: CIdentifier | NoneNode = identifier
         self.type: CType = type
 

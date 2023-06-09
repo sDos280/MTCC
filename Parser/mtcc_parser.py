@@ -247,21 +247,19 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                # TODO: each if the identifier is typedef, if not break
-                if self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string):
-                    if specifier_counter != 0:
-                        self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
-                                         eh.SpecifierQualifierListInvalid)
+                if specifier_counter != 0:
+                    self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
+                                     eh.SpecifierQualifierListInvalid)
 
-                    # TODO: implement and return the CSpecifierType
-                    if self.is_token_kind(tk.TokenKind.STRUCT):
-                        assert False, "Not implemented"
-                    elif self.is_token_kind(tk.TokenKind.UNION):
-                        assert False, "Not implemented"
-                    elif self.is_token_kind(tk.TokenKind.ENUM):
-                        assert False, "Not implemented"
-                    elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                        assert False, "Not implemented"
+                # TODO: implement and return the CSpecifierType
+                if self.is_token_kind(tk.TokenKind.STRUCT):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.UNION):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.ENUM):
+                    assert False, "Not implemented"
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string):  # check if the identifier is typedef, if not break
+                    assert False, "Not implemented"
                 else:
                     return type
 
@@ -344,7 +342,7 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                if specifier_counter != 0:
+                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string)):
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 
@@ -355,8 +353,10 @@ class Parser:
                     assert False, "Not implemented"
                 elif self.is_token_kind(tk.TokenKind.ENUM):
                     assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.IDENTIFIER):
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string):  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
+                else:
+                    return type
 
             current_specifier_kind: CSpecifierKind = self.peek_type_specifier()
             if current_specifier_kind == CSpecifierKind.Signed or current_specifier_kind == current_specifier_kind.Unsigned:
@@ -494,24 +494,9 @@ class Parser:
         :return: a direct declarator node
         """
         identifier: CIdentifier | NoneNode = NoneNode()
-        if self.is_direct_declarator():
-            if self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                identifier = CIdentifier(self.current_token)
-                self.peek_token()  # peek the identifier token
-            elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-                self.peek_token()  # peek the ( token
-
-                declarator: CDeclarator = self.peek_declarator()
-
-                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected closing parenthesis", eh.TokenExpected)
-                self.peek_token()  # peek the ) token
-
-                return declarator
-        else:
-            self.fatal_token(self.current_token.index,
-                             "Expected identifier or opening parenthesis",
-                             eh.TokenExpected
-                             )
+        if self.is_token_kind(tk.TokenKind.IDENTIFIER):
+            identifier = CIdentifier(self.current_token)
+            self.peek_token()  # peek the identifier token
 
         declarator: CDeclarator = CDeclarator(identifier, NoneNode())
 
@@ -1079,7 +1064,7 @@ class Parser:
 
             sub_assignment_expression: Node = self.peek_assignment_expression()
 
-            return CBinaryOp(self.get_binary_assignment_op_kind_(), conditional_expression, sub_assignment_expression)
+            return CBinaryOp(self.peek_binary_assignment_op(), conditional_expression, sub_assignment_expression)
         else:
             return conditional_expression
 
@@ -1096,7 +1081,7 @@ class Parser:
                self.is_token_kind(tk.TokenKind.XOR_ASSIGN) or \
                self.is_token_kind(tk.TokenKind.OR_ASSIGN)
 
-    def get_binary_assignment_op_kind_(self) -> CBinaryOpKind:
+    def peek_binary_assignment_op(self) -> CBinaryOpKind:
         if self.is_token_kind(tk.TokenKind.EQUALS):
             return CBinaryOpKind.Assignment
         elif self.is_token_kind(tk.TokenKind.MUL_ASSIGN):
@@ -1120,7 +1105,7 @@ class Parser:
         elif self.is_token_kind(tk.TokenKind.OR_ASSIGN):
             return CBinaryOpKind.BitwiseOrAssignment
         else:
-            raise Exception("Invalid assignment operator token")
+            self.fatal_token(self.current_token.index, "Expected assignment operator token", eh.TokenExpected)
 
     def peek_expression(self) -> Node | list[Node]:
         assignment_expressions: list[Node] = []
@@ -1215,17 +1200,93 @@ class Parser:
 
         return enum
 
-    def parse(self) -> None:
-        self.peek_token()
+    def peek_initializer_list(self) -> list[Node]:
+        """ parse an initializer list
+        initializer_list
+            : initializer
+            | initializer_list ',' initializer
+            ;
+        :return: a list of nodes
+        """
 
-        expression = self.peek_expression()
+        initializers: list[Node] = []
 
-        """while not (self.current_token is None or self.is_token_kind(tk.TokenKind.END)):
-            statement = None
+        initializer: Node = self.peek_initializer()
 
-            if self.is_token_kind(tk.TokenKind.ENUM):
-                enum: CEnum = self.peek_enum_specifier()
-                self.enums.append(enum)
-                self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed")
-            else:
-                self.peek_token()"""
+        initializers.append(initializer)
+
+        while self.is_token_kind(tk.TokenKind.COMMA):
+            self.peek_token()  # peek , token
+            initializer = self.peek_initializer()
+            initializers.append(initializer)
+
+        return initializers
+
+    def peek_initializer(self) -> Node | list[Node]:
+        """ parse an initializer
+        initializer
+            : assignment_expression
+            | '{' initializer_list '}'
+            | '{' initializer_list ',' '}'  we won't implement this one
+            ;
+        :return: a node or a list of nodes
+        """
+
+        if self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
+            return self.peek_initializer_list()
+        else:
+            return self.peek_assignment_expression()
+
+    def peek_init_declarator(self) -> CDeclarator:
+        declarator: CDeclarator = self.peek_declarator()
+
+        if self.is_token_kind(tk.TokenKind.EQUALS):
+            self.peek_token()  # peek the equal token
+
+            declarator.initializer = self.peek_initializer()
+
+        return declarator
+
+    def peek_init_declarator_list(self) -> list[CDeclarator]:
+        """ parse a init declarator list
+        init_declarator_list
+            : init_declarator
+            | init_declarator_list ',' init_declarator
+            ;
+        :return: a list of declarators
+        """
+        declarators: list[CDeclarator] = []
+
+        declarator: CDeclarator = self.peek_init_declarator()
+
+        declarators.append(declarator)
+
+        while self.is_token_kind(tk.TokenKind.COMMA):
+            self.peek_token()  # peek , token
+            declarator = self.peek_init_declarator()
+            declarators.append(declarator)
+
+        return declarators
+
+    def peek_declaration(self) -> list[CDeclarator]:
+        """ parse a declaration
+        declaration
+            : declaration_specifiers ';'   i have no idea where that is used
+            | declaration_specifiers init_declarator_list ';'
+            ;
+        :return: a declarator or a list of declarators
+        """
+        declaration_specifiers: CSpecifierType = self.peek_declaration_specifiers()
+
+        init_declarator_list: list[CDeclarator] = self.peek_init_declarator_list()
+
+        for declarator in init_declarator_list:
+            declarator.get_child_bottom().child = declaration_specifiers
+
+        self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+        self.peek_token()  # peek , token
+
+        return init_declarator_list
+
+    def translation_unit(self) -> None:
+        assert False, "Not implemented yet"

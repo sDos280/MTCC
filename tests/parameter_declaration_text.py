@@ -10,6 +10,6 @@ parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
 
 for i in range(4):
     declarator: Parser.mtcc_c_ast.CDeclarator = parser.peek_parameter_declaration()
-    print(f"pointer {i + 1}: AST: ")
+    print(f"parameter {i + 1}: AST: ")
     print(json.dumps(declarator.to_dict(), indent=2), end='\n\n')
     parser.peek_token()  # peek ; token

@@ -106,6 +106,7 @@ string_to_keyword: dict[str, TokenKind] = {
     "unsigned": TokenKind.UNSIGNED,
     "default": TokenKind.DEFAULT,
     "typedef": TokenKind.TYPEDEF,
+    "continue": TokenKind.CONTINUE,
     "extern": TokenKind.EXTERN,
     "struct": TokenKind.STRUCT,
     "static": TokenKind.STATIC,

@@ -461,6 +461,42 @@ class CReturn:
         }
 
 
+class CLabel:
+    def __init__(self, identifier: CIdentifier, value: Node):
+        self.identifier: CIdentifier = identifier
+        self.value: Node = value
+
+    def to_dict(self):
+        return {
+            "node": "CLabel",
+            "identifier": self.identifier.to_dict(),
+            "value": self.value.to_dict()
+        }
+
+
+class CCase:
+    def __init__(self, expression_case: Node, value: Node):
+        self.expression_case: Node = expression_case
+        self.value: Node = value
+
+    def to_dict(self):
+        return {
+            "node": "CCase",
+            "case": self.expression_case.to_dict(),
+            "value": self.value.to_dict()
+        }
+
+
+class CDefault:
+    def __init__(self, value: Node):
+        self.value: Node = value
+
+    def to_dict(self):
+        return {
+            "node": "CDefault",
+            "value": self.value.to_dict()
+        }
+
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CType = Union[CFunction, CPointer, CArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CParameter = CDeclarator
@@ -486,6 +522,9 @@ Node = Union[
     CGoto,
     CBreak,
     CContinue,
+    CLabel,
+    CCase,
+    CDefault,
 ]
 
 specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {

@@ -95,6 +95,30 @@ class Parser:
         if not self.is_token_kind(kind):
             self.fatal_token(self.index, error_string, raise_exception)
 
+    def is_labeled_statement(self) -> bool:
+        """check if the current token is a labeled statement starter"""
+        return self.is_token_kind([tk.TokenKind.IDENTIFIER, tk.TokenKind.CASE, tk.TokenKind.DEFAULT])
+
+    def is_compound_statement(self) -> bool:
+        """check if the current token is a compound statement starter"""
+        return self.is_token_kind([tk.TokenKind.OPENING_CURLY_BRACE])
+
+    def is_expression_statement(self) -> bool:
+        """check if the current token is a compound statement starter, do not check of expression starter"""
+        return self.is_token_kind([tk.TokenKind.SEMICOLON])
+
+    def is_selection_statement(self) -> bool:
+        """check if the current token is a selection statement starter"""
+        return self.is_token_kind([tk.TokenKind.IF, tk.TokenKind.SWITCH])
+
+    def is_iteration_statement(self) -> bool:
+        """check if the current token is an iteration statement starter"""
+        return self.is_token_kind([tk.TokenKind.WHILE, tk.TokenKind.DO, tk.TokenKind.FOR])
+
+    def is_jump_statement(self) -> bool:
+        """check if the current token is a jump statement starter"""
+        return self.is_token_kind([tk.TokenKind.GOTO, tk.TokenKind.CONTINUE, tk.TokenKind.BREAK, tk.TokenKind.RETURN])
+
     def is_abstract_declarator(self) -> bool:
         """check if the current token is an abstract declarator starter"""
         return self.is_token_kind(
@@ -1288,6 +1312,9 @@ class Parser:
 
         return init_declarator_list
 
+    def peek_statement(self) -> Node:
+        pass
+
     def peek_jump_statement(self) -> CGoto | CBreak | CContinue | CReturn:
         """ parse a jump statement
         jump_statement
@@ -1297,7 +1324,7 @@ class Parser:
             | RETURN ';'
             | RETURN expression ';'
             ;
-        :return: a node
+        :return: a node of type CGoto, CBreak, CContinue or CReturn
         """
         if self.is_token_kind(tk.TokenKind.GOTO):
             self.peek_token()  # peek goto token

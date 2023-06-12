@@ -1312,8 +1312,67 @@ class Parser:
 
         return init_declarator_list
 
+    def peek_labeled_statement(self) -> CLabel | CCase | CDefault:
+        """ parse a labeled statement
+        labeled_statement
+            : IDENTIFIER ':' statement
+            | CASE constant_expression ':' statement
+            | DEFAULT ':' statement
+            ;
+        :return: a node of type CLabel
+        """
+        if self.is_token_kind(tk.TokenKind.IDENTIFIER):
+            self.peek_token()  # peek case token
+
+            label: CLabel = CLabel(CIdentifier(self.current_token), NoneNode())
+
+            self.expect_token_kind(tk.TokenKind.COLON, "A colon is needed", eh.TokenExpected)
+            self.peek_token()  # peek : token
+
+            label.value = self.peek_statement()
+
+            return label
+        elif self.is_token_kind(tk.TokenKind.CASE):
+            self.peek_token()  # peek case token
+
+            constant_expression: Node = self.peek_constant_expression()
+
+            self.expect_token_kind(tk.TokenKind.COLON, "A colon is needed", eh.TokenExpected)
+            self.peek_token()  # peek : token
+
+            case: CCase = CCase(constant_expression, NoneNode())
+
+            case.value = self.peek_statement()
+
+            return case
+        elif self.is_token_kind(tk.TokenKind.DEFAULT):
+            self.peek_token()  # peek default token
+
+            self.expect_token_kind(tk.TokenKind.COLON, "A colon is needed", eh.TokenExpected)
+            self.peek_token()  # peek : token
+
+            default: CDefault = CDefault(NoneNode())
+
+            default.value = self.peek_statement()
+
+            return default
+        else:
+            self.fatal_token(self.current_token.index, "A labeled statement is needed", eh.TokenExpected)
+
+
     def peek_statement(self) -> Node:
-        pass
+        if self.is_labeled_statement():
+            return self.peek_labeled_statement()
+        elif self.is_compound_statement():
+            return self.peek_compound_statement()
+        elif self.is_selection_statement():
+            return self.peek_selection_statement()
+        elif self.is_iteration_statement():
+            return self.peek_iteration_statement()
+        elif self.is_jump_statement():
+            return self.peek_jump_statement()
+        else:
+            return self.peek_expression_statement()
 
     def peek_jump_statement(self) -> CGoto | CBreak | CContinue | CReturn:
         """ parse a jump statement

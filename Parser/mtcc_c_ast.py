@@ -419,6 +419,48 @@ class FunctionCall:
         self.parameters_type: list = parameters_type
 
 
+class CGoto:
+    def __init__(self, label: CIdentifier):
+        self.label: CIdentifier = label
+
+    def to_dict(self):
+        return {
+            "node": "CGoto",
+            "label": self.label.to_dict()
+        }
+
+
+class CContinue:
+    def __init__(self):
+        pass
+
+    def to_dict(self):
+        return {
+            "node": "CContinue"
+        }
+
+
+class CBreak:
+    def __init__(self):
+        pass
+
+    def to_dict(self):
+        return {
+            "node": "CBreak"
+        }
+
+
+class CReturn:
+    def __init__(self, value: Node):
+        self.value: Node = value
+
+    def to_dict(self):
+        return {
+            "node": "CReturn",
+            "value": self.value.to_dict()
+        }
+
+
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CType = Union[CFunction, CPointer, CArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CParameter = CDeclarator
@@ -440,7 +482,10 @@ Node = Union[
     CPointer,
     CArray,
     CFunction,
-    CParameter
+    CParameter,
+    CGoto,
+    CBreak,
+    CContinue,
 ]
 
 specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {

@@ -1288,5 +1288,58 @@ class Parser:
 
         return init_declarator_list
 
+    def peek_jump_statement(self) -> CGoto | CBreak | CContinue | CReturn:
+        """ parse a jump statement
+        jump_statement
+            : GOTO IDENTIFIER ';'
+            | CONTINUE ';'
+            | BREAK ';'
+            | RETURN ';'
+            | RETURN expression ';'
+            ;
+        :return: a node
+        """
+        if self.is_token_kind(tk.TokenKind.GOTO):
+            self.peek_token()  # peek goto token
+
+            self.expect_token_kind(tk.TokenKind.IDENTIFIER, "An identifier is needed", eh.TokenExpected)
+            identifier: CIdentifier = CIdentifier(self.current_token)
+            self.peek_token()  # peek identifier token
+
+            self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+            self.peek_token()  # peek ; token
+
+            return CGoto(identifier)
+        elif self.is_token_kind(tk.TokenKind.CONTINUE):
+            self.peek_token()  # peek continue token
+
+            self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+            self.peek_token()  # peek ; token
+
+            return CContinue()
+        elif self.is_token_kind(tk.TokenKind.BREAK):
+            self.peek_token()  # peek break token
+
+            self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+            self.peek_token()  # peek ; token
+
+            return CBreak()
+        elif self.is_token_kind(tk.TokenKind.RETURN):
+            self.peek_token()  # peek return token
+
+            if self.is_token_kind(tk.TokenKind.SEMICOLON):
+                self.peek_token()  # peek ; token
+
+                return CReturn(NoneNode())
+
+            expression: Node = self.peek_expression()
+
+            self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+            self.peek_token()  # peek ; token
+
+            return CReturn(expression)
+        else:
+            self.fatal_token(self.current_token.index, "A jump statement is needed", eh.TokenExpected)
+
     def translation_unit(self) -> None:
         assert False, "Not implemented yet"

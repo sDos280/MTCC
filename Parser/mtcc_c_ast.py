@@ -513,6 +513,34 @@ class CCompound:
         }
 
 
+class CIf:
+    def __init__(self, condition: Node, then: Node, else_: Node):
+        self.condition: Node = condition
+        self.then: Node = then
+        self.else_: Node = else_
+
+    def to_dict(self):
+        return {
+            "node": "CIf",
+            "condition": self.condition.to_dict(),
+            "then": self.then.to_dict(),
+            "else": self.else_.to_dict()
+        }
+
+
+class CSwitch:
+    def __init__(self, expression: Node, statement: Node):
+        self.expression: Node = expression
+        self.statement: Node = statement
+
+    def to_dict(self):
+        return {
+            "node": "CSwitch",
+            "expression": self.expression.to_dict(),
+            "statement": self.statement.to_dict()
+        }
+
+
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CType = Union[CFunction, CPointer, CArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CParameter = CDeclarator
@@ -541,7 +569,10 @@ Node = Union[
     CLabel,
     CCase,
     CDefault,
-    CCompound
+    CCompound,
+    CIf,
+    CSwitch,
+    CReturn
 ]
 
 specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {

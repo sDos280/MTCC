@@ -4,6 +4,13 @@ break;
 return;
 return 45 * 6;
 {
-	int x = i * i;
+	int x = 5;
 	int y = 10;
+}
+switch (choice) {
+	case 1:
+        break;
+
+	case 2:
+		break;
 }

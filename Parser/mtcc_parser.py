@@ -1388,7 +1388,67 @@ class Parser:
 
         return compound
 
+    def peek_selection_statement(self) -> CIf | CSwitch:
+        """ parse a selection statement
+        selection_statement
+            : IF '(' expression ')' statement
+            | IF '(' expression ')' statement ELSE statement
+            | SWITCH '(' expression ')' statement
+            ;
+        :return: a node of type CIf or CSwitch
+        """
+        self.expect_token_kind([tk.TokenKind.IF, tk.TokenKind.SWITCH], "An if or switch statement is needed", eh.TokenExpected)
+
+        if self.is_token_kind(tk.TokenKind.IF):
+            self.peek_token()  # peek if token
+
+            self.expect_token_kind(tk.TokenKind.OPENING_PARENTHESIS, "An opening parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ( token
+
+            expression: Node = self.peek_expression()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "A closing parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ) token
+
+            if_statement: CIf = CIf(expression, NoneNode(), NoneNode())
+
+            if_statement.then = self.peek_statement()
+
+            if self.is_token_kind(tk.TokenKind.ELSE):
+                self.peek_token()  # peek else token
+
+                if_statement.else_ = self.peek_statement()
+
+            return if_statement
+        elif self.is_token_kind(tk.TokenKind.SWITCH):
+            self.peek_token()  # peek switch token
+
+            self.expect_token_kind(tk.TokenKind.OPENING_PARENTHESIS, "An opening parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ( token
+
+            expression: Node = self.peek_expression()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "A closing parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ) token
+
+            switch: CSwitch = CSwitch(expression, NoneNode())
+
+            switch.statement = self.peek_statement()
+
+            return switch
+
     def peek_statement(self) -> Node:
+        """ parse a statement
+        statement
+            : labeled_statement
+            | compound_statement
+            | expression_statement
+            | selection_statement
+            | iteration_statement
+            | jump_statement
+            ;
+        :return a node of a statement
+        """
         if self.is_labeled_statement():
             return self.peek_labeled_statement()
         elif self.is_compound_statement():

@@ -756,9 +756,6 @@ class Parser:
         """
         primary_expression: Node = self.peek_primary_expression()
 
-        if not isinstance(primary_expression, CIdentifier):
-            return primary_expression
-
         if self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
             assert False, "Not implemented"
 
@@ -777,8 +774,7 @@ class Parser:
         elif self.is_token_kind(tk.TokenKind.DEC_OP):
             assert False, "Not implemented"
 
-        else:
-            raise SyntaxError("Expected a postfix expression token")
+        return primary_expression
 
     def peek_argument_expression_list(self) -> Node:
         assert False, "Not implemented"
@@ -1359,6 +1355,38 @@ class Parser:
         else:
             self.fatal_token(self.current_token.index, "A labeled statement is needed", eh.TokenExpected)
 
+    def peek_compound_statement(self) -> CCompound:
+        """
+        compound_statement
+            : '{' '}'
+            | '{' statement_list '}'
+            | '{' declaration_list '}'
+            | '{' declaration_list statement_list '}'
+            ;
+        :return: a list of declarations and/or statements
+        """
+        self.expect_token_kind(tk.TokenKind.OPENING_CURLY_BRACE, "An opening curly brace is needed", eh.TokenExpected)
+        self.peek_token()  # peek { token
+
+        compound: CCompound = CCompound([], [])
+
+        if self.is_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE):
+            self.peek_token()  # peek } token
+            return compound
+
+        if self.is_token_type_specifier() or self.is_token_type_qualifier() or self.is_token_storage_class_specifier():
+            while self.is_token_type_specifier() or self.is_token_type_qualifier() or self.is_token_storage_class_specifier():
+                declaration: list[CDeclarator] = self.peek_declaration()
+                compound.declarations.append(declaration)
+
+        while not self.is_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE):
+            statement: Node = self.peek_statement()
+            compound.statements.append(statement)
+
+        self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "A closing curly brace is needed", eh.TokenExpected)
+        self.peek_token()  # peek } token
+
+        return compound
 
     def peek_statement(self) -> Node:
         if self.is_labeled_statement():

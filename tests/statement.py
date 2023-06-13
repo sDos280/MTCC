@@ -8,7 +8,7 @@ lexer.lex()
 
 parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
 
-for i in range(5):
-    statement: Parser.mtcc_c_ast.Node = parser.peek_jump_statement()
+for i in range(6):
+    statement: Parser.mtcc_c_ast.Node = parser.peek_statement()
     print(f"statement {i + 1}: AST: ")
     print(json.dumps(statement.to_dict(), indent=2), end='\n\n')

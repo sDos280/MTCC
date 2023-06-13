@@ -299,6 +299,7 @@ class CDeclarator:
     def __init__(self, identifier: CIdentifier | NoneNode, type: CType, initializer: Node | list[Node] = NoneNode()):
         self.identifier: CIdentifier | NoneNode = identifier
         self.type: CType = type
+        self.initializer: Node | list[Node] = initializer
 
     @property
     def child(self) -> CType:
@@ -312,7 +313,8 @@ class CDeclarator:
         return {
             "node": "CDeclarator",
             "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
-            "type": self.type.to_dict()
+            "type": self.type.to_dict(),
+            "initializer": self.initializer.to_dict()
         }
 
     def get_child_bottom(self) -> Node:
@@ -497,6 +499,20 @@ class CDefault:
             "value": self.value.to_dict()
         }
 
+
+class CCompound:
+    def __init__(self, declarations: list[list[CDeclarator]], statements: list[Node]):
+        self.declarations: list[list[CDeclarator]] = declarations
+        self.statements: list[Node] = statements
+
+    def to_dict(self):
+        return {
+            "node": "CCompound",
+            "declarations": [[declarator.to_dict() for declarator in declaration] for declaration in self.declarations],
+            "statements": [statement.to_dict() for statement in self.statements]
+        }
+
+
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CType = Union[CFunction, CPointer, CArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CParameter = CDeclarator
@@ -525,6 +541,7 @@ Node = Union[
     CLabel,
     CCase,
     CDefault,
+    CCompound
 ]
 
 specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {

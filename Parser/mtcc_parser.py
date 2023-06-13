@@ -61,8 +61,7 @@ class Parser:
              tk.TokenKind.UNSIGNED,
              tk.TokenKind.STRUCT,
              tk.TokenKind.UNION,
-             tk.TokenKind.ENUM,
-             tk.TokenKind.IDENTIFIER])
+             tk.TokenKind.ENUM]) or self.is_typedef_name()
 
     def is_token_type_qualifier(self) -> bool:
         return self.is_token_kind(
@@ -96,8 +95,11 @@ class Parser:
             self.fatal_token(self.index, error_string, raise_exception)
 
     def is_labeled_statement(self) -> bool:
-        """check if the current token is a labeled statement starter"""
-        return self.is_token_kind([tk.TokenKind.IDENTIFIER, tk.TokenKind.CASE, tk.TokenKind.DEFAULT])
+        """check if the current token is a labeled statement starter '... : ' """
+        if self.is_token_kind(tk.TokenKind.IDENTIFIER):
+            if self.tokens[self.index + 1].kind == tk.TokenKind.COLON:
+                return True
+        return self.is_token_kind([tk.TokenKind.CASE, tk.TokenKind.DEFAULT])
 
     def is_compound_statement(self) -> bool:
         """check if the current token is a compound statement starter"""
@@ -136,11 +138,14 @@ class Parser:
         """check if the current token is a declarator starter"""
         return self.is_token_kind([tk.TokenKind.ASTERISK, tk.TokenKind.IDENTIFIER, tk.TokenKind.OPENING_PARENTHESIS, tk.TokenKind.OPENING_BRACKET])
 
-    def is_typedef_name(self, name: str) -> bool:
+    def is_typedef_name_name(self, name: str) -> bool:
         for typedef in self.typedefs:
             if typedef.name.token.string == name:
                 return True
         return False
+
+    def is_typedef_name(self) -> bool:
+        return self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string)
 
     def peek_type_qualifier(self) -> CQualifierKind:
         self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token",
@@ -271,7 +276,7 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string)):
+                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string)):
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 
@@ -282,7 +287,7 @@ class Parser:
                     assert False, "Not implemented"
                 elif self.is_token_kind(tk.TokenKind.ENUM):
                     assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string):  # check if the identifier is typedef, if not break
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:
                     return type
@@ -366,7 +371,7 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string)):
+                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string)):
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 
@@ -377,7 +382,7 @@ class Parser:
                     assert False, "Not implemented"
                 elif self.is_token_kind(tk.TokenKind.ENUM):
                     assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name(self.current_token.string):  # check if the identifier is typedef, if not break
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:
                     return type
@@ -1080,11 +1085,11 @@ class Parser:
         conditional_expression: Node = self.peek_conditional_expression()
 
         if self.is_assignment_operator():
-            self.peek_token()  # peek assignment operator token
+            binary_assignment_op = self.peek_binary_assignment_op()  # peek assignment operator token
 
             sub_assignment_expression: Node = self.peek_assignment_expression()
 
-            return CBinaryOp(self.peek_binary_assignment_op(), conditional_expression, sub_assignment_expression)
+            return CBinaryOp(binary_assignment_op, conditional_expression, sub_assignment_expression)
         else:
             return conditional_expression
 
@@ -1103,26 +1108,37 @@ class Parser:
 
     def peek_binary_assignment_op(self) -> CBinaryOpKind:
         if self.is_token_kind(tk.TokenKind.EQUALS):
+            self.peek_token()  # peek the = token
             return CBinaryOpKind.Assignment
         elif self.is_token_kind(tk.TokenKind.MUL_ASSIGN):
+            self.peek_token()  # peek the *= token
             return CBinaryOpKind.MultiplicationAssignment
         elif self.is_token_kind(tk.TokenKind.DIV_ASSIGN):
+            self.peek_token()  # peek the /= token
             return CBinaryOpKind.DivisionAssignment
         elif self.is_token_kind(tk.TokenKind.MOD_ASSIGN):
+            self.peek_token()  # peek the %= token
             return CBinaryOpKind.ModulusAssignment
         elif self.is_token_kind(tk.TokenKind.ADD_ASSIGN):
+            self.peek_token()  # peek the += token
             return CBinaryOpKind.AdditionAssignment
         elif self.is_token_kind(tk.TokenKind.SUB_ASSIGN):
+            self.peek_token()  # peek the -= token
             return CBinaryOpKind.SubtractionAssignment
         elif self.is_token_kind(tk.TokenKind.LEFT_ASSIGN):
+            self.peek_token()  # peek the <<= token
             return CBinaryOpKind.LeftShiftAssignment
         elif self.is_token_kind(tk.TokenKind.RIGHT_ASSIGN):
+            self.peek_token()  # peek the >>= token
             return CBinaryOpKind.RightShiftAssignment
         elif self.is_token_kind(tk.TokenKind.AND_ASSIGN):
+            self.peek_token()  # peek the &= token
             return CBinaryOpKind.BitwiseAndAssignment
         elif self.is_token_kind(tk.TokenKind.XOR_ASSIGN):
+            self.peek_token()  # peek the ^= token
             return CBinaryOpKind.BitwiseXorAssignment
         elif self.is_token_kind(tk.TokenKind.OR_ASSIGN):
+            self.peek_token()  # peek the |= token
             return CBinaryOpKind.BitwiseOrAssignment
         else:
             self.fatal_token(self.current_token.index, "Expected assignment operator token", eh.TokenExpected)
@@ -1480,6 +1496,84 @@ class Parser:
             return self.peek_jump_statement()
         else:
             return self.peek_expression_statement()
+
+    def peek_iteration_statement(self) -> CWhile | CFor:
+        """ parse an iteration statement
+        iteration_statement
+            : WHILE '(' expression ')' statement
+            | DO statement WHILE '(' expression ')' ';'
+            | FOR '(' expression_statement expression_statement ')' statement
+            | FOR '(' expression_statement expression_statement expression ')' statement
+            ;
+        :return: a node of type CWhile or CFor
+        """
+        self.expect_token_kind([tk.TokenKind.WHILE, tk.TokenKind.FOR, tk.TokenKind.DO], "A while or for or do statement is needed", eh.TokenExpected)
+
+        if self.is_token_kind(tk.TokenKind.WHILE):
+            self.peek_token()  # peek while token
+
+            self.expect_token_kind(tk.TokenKind.OPENING_PARENTHESIS, "An opening parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ( token
+
+            expression: Node = self.peek_expression()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "A closing parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ) token
+
+            while_statement: CWhile = CWhile(expression, NoneNode())
+            while_statement.statement = self.peek_statement()
+
+            return while_statement
+        elif self.is_token_kind(tk.TokenKind.DO):
+            self.peek_token()  # peek do token
+
+            while_statement: CWhile = CWhile(NoneNode(), NoneNode(), do=True)
+
+            while_statement.statement = self.peek_statement()
+
+            self.expect_token_kind(tk.TokenKind.WHILE, "A while statement is needed", eh.TokenExpected)
+            self.peek_token()  # peek while token
+
+            self.expect_token_kind(tk.TokenKind.OPENING_PARENTHESIS, "An opening parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ( token
+
+            while_statement.expression = self.peek_expression()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "A closing parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ) token
+
+            self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+            self.peek_token()  # peek ; token
+
+            return while_statement
+        elif self.is_token_kind(tk.TokenKind.FOR):
+            self.peek_token()  # peek for token
+
+            self.expect_token_kind(tk.TokenKind.OPENING_PARENTHESIS, "An opening parenthesis is needed", eh.TokenExpected)
+            self.peek_token()  # peek ( token
+
+            expression_init: Node = self.peek_expression_statement()
+            expression_condition: Node = self.peek_expression_statement()
+
+            expression_increment: Node = NoneNode()
+
+            cfor: CFor = CFor(expression_init, expression_condition, NoneNode(), increment=expression_increment)
+
+            if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
+                self.peek_token()  # peek ) token
+
+                cfor.statement = self.peek_statement()
+            else:
+                expression_increment = self.peek_expression()
+
+                cfor.increment = expression_increment
+
+                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "A closing parenthesis is needed", eh.TokenExpected)
+                self.peek_token()  # peek ) token
+
+                cfor.statement = self.peek_statement()
+
+            return cfor
 
     def peek_jump_statement(self) -> CGoto | CBreak | CContinue | CReturn:
         """ parse a jump statement

@@ -563,6 +563,15 @@ class CFor:
         self.increment: Node = increment
         self.statement: Node = statement
 
+    def to_dict(self):
+        return {
+            "node": "CFor",
+            "init": self.init.to_dict(),
+            "condition": self.condition.to_dict(),
+            "increment": self.increment.to_dict(),
+            "statement": self.statement.to_dict()
+        }
+
 
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CType = Union[CFunction, CPointer, CArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]

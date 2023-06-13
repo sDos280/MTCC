@@ -1,18 +1,20 @@
-goto label;
-continue;
-break;
-return;
-return 45 * 6;
+for (i = 0; i < 5; i += 1)
 {
-	int x = 5;
-	int y = 10;
+	i -= 1;
 }
+
+do {
+	i += 1;
+} while (i < 5);
+
+while (i < 5){
+	i += 88888.522;
+}
+
 switch (choice) {
 	case 1:
         break;
 
 	case 2:
 		break;
-
-		5 * 5;
 }

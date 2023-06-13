@@ -13,4 +13,6 @@ switch (choice) {
 
 	case 2:
 		break;
+
+		5 * 5;
 }

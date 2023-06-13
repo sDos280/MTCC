@@ -1388,6 +1388,25 @@ class Parser:
 
         return compound
 
+    def peek_expression_statement(self) -> Node:
+        """ parse an expression statement
+        expression_statement
+            : ';'
+            | expression ';'
+            ;
+        """
+        if self.is_token_kind(tk.TokenKind.SEMICOLON):
+            self.peek_token()  # peek ; token
+
+            return NoneNode()
+        else:
+            expression: Node = self.peek_expression()
+
+            self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+            self.peek_token()  # peek ; token
+
+            return expression
+
     def peek_selection_statement(self) -> CIf | CSwitch:
         """ parse a selection statement
         selection_statement

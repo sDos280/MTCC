@@ -5,3 +5,4 @@ import escape_sequence_test
 import pointer_test
 import declarator_test
 import declaration_test
+import statement

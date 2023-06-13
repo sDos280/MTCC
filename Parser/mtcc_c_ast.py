@@ -541,6 +541,28 @@ class CSwitch:
         }
 
 
+class CWhile:
+    def __init__(self, expression: Node, statement: Node, do: Node = NoneNode()):
+        self.expression: Node = expression
+        self.statement: Node = statement
+        self.do: Node = do
+
+    def to_dict(self):
+        return {
+            "node": "CWhile",
+            "expression": self.expression.to_dict(),
+            "statement": self.statement.to_dict()
+        }
+
+
+class CFor:
+    def __init__(self, init: Node, condition: Node, statement: Node, increment: Node = NoneNode()):
+        self.init: Node = init
+        self.condition: Node = condition
+        self.increment: Node = increment
+        self.statement: Node = statement
+
+
 CSpecifierType = Union[CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CType = Union[CFunction, CPointer, CArray, CPrimitiveDataTypes, CStruct, CUnion, CEnum, CTypedef, NoneNode]
 CParameter = CDeclarator
@@ -572,7 +594,9 @@ Node = Union[
     CCompound,
     CIf,
     CSwitch,
-    CReturn
+    CReturn,
+    CWhile,
+    CFor
 ]
 
 specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {

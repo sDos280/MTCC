@@ -542,16 +542,17 @@ class CSwitch:
 
 
 class CWhile:
-    def __init__(self, expression: Node, statement: Node, do: Node = NoneNode()):
+    def __init__(self, expression: Node, statement: Node, do: bool = False):
         self.expression: Node = expression
         self.statement: Node = statement
-        self.do: Node = do
+        self.do: bool = do
 
     def to_dict(self):
         return {
             "node": "CWhile",
             "expression": self.expression.to_dict(),
-            "statement": self.statement.to_dict()
+            "statement": self.statement.to_dict(),
+            "do": self.do
         }
 
 

@@ -285,7 +285,8 @@ class Parser:
                     type = self.peek_struct_or_union_specifier()
                     return type
                 elif self.is_token_kind(tk.TokenKind.ENUM):
-                    assert False, "Not implemented"
+                    type = self.peek_enum_specifier()
+                    return type
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:
@@ -379,7 +380,8 @@ class Parser:
                     type = self.peek_struct_or_union_specifier()
                     return type
                 elif self.is_token_kind(tk.TokenKind.ENUM):
-                    assert False, "Not implemented"
+                    type = self.peek_enum_specifier()
+                    return type
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:

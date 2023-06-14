@@ -23,4 +23,18 @@ struct Employee {
     } info;
 };
 
+struct DataValue {
+    enum DataType {
+	    INT,
+	    FLOAT,
+	    STRING
+	} type;
+
+    union {
+        int intValue;
+        float floatValue;
+        char stringValue[50];
+    } value;
+};
+
 

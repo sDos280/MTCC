@@ -276,7 +276,7 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string)):
+                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name()):
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 
@@ -287,7 +287,7 @@ class Parser:
                 elif self.is_token_kind(tk.TokenKind.ENUM):
                     type = self.peek_enum_specifier()
                     return type
-                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name():  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:
                     return type
@@ -371,7 +371,7 @@ class Parser:
                     self.is_token_kind(tk.TokenKind.UNION) or \
                     self.is_token_kind(tk.TokenKind.ENUM) or \
                     self.is_token_kind(tk.TokenKind.IDENTIFIER):
-                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string)):
+                if specifier_counter != 0 and (self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name()):
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 
@@ -382,7 +382,7 @@ class Parser:
                 elif self.is_token_kind(tk.TokenKind.ENUM):
                     type = self.peek_enum_specifier()
                     return type
-                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break
+                elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name():  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:
                     return type

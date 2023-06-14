@@ -64,11 +64,29 @@ class NoneNode:
 
 
 class CStruct:
-    pass
+    def __init__(self, name: CIdentifier, members: list[list[CDeclarator]]):
+        self.name: CIdentifier = name
+        self.members: list[list[CDeclarator]] = members
+
+    def to_dict(self):
+        return {
+            "node": "CStruct",
+            "name": self.name.to_dict(),
+            "members": [[member.to_dict() for member in members] for members in self.members]
+        }
 
 
 class CUnion:
-    pass
+    def __init__(self, name: CIdentifier, members: list[list[CDeclarator]]):
+        self.name: CIdentifier = name
+        self.members: list[list[CDeclarator]] = members
+
+    def to_dict(self):
+        return {
+            "node": "CUnion",
+            "name": self.name.to_dict(),
+            "members": [[member.to_dict() for member in members] for members in self.members]
+        }
 
 
 class CTypedef:

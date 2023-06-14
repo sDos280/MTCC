@@ -1324,6 +1324,111 @@ class Parser:
 
         return init_declarator_list
 
+    def peek_struct_or_union_specifier(self) -> CStruct | CUnion:
+        self.expect_token_kind([tk.TokenKind.STRUCT, tk.TokenKind.UNION], "A struct or union keyword was expected", eh.TokenExpected)
+
+        is_struct: bool = self.is_token_kind(tk.TokenKind.STRUCT)
+
+        self.peek_token()  # peek the struct or union token
+
+        struct_or_union: CStruct | CUnion = CStruct(CIdentifier(None), []) if is_struct else CUnion(CIdentifier(None), [])
+
+        if self.is_token_kind(tk.TokenKind.IDENTIFIER):
+            struct_or_union.name = CIdentifier(self.current_token)
+            self.peek_token()  # peek identifier token
+
+            if self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
+                self.peek_token()  # peek the { token
+
+                struct_or_union.members = self.peek_struct_declaration_list()
+
+                self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "A closing curly brace is needed", eh.TokenExpected)
+                self.peek_token()  # peek the } token
+        else:
+            if self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
+                self.peek_token()  # peek the { token
+
+                struct_or_union.members = self.peek_struct_declaration_list()
+
+                self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "A closing curly brace is needed", eh.TokenExpected)
+                self.peek_token()  # peek the } token
+
+        return struct_or_union
+
+    def peek_struct_declaration_list(self) -> list[list[CDeclarator]]:
+        """ parse a struct declaration list
+        struct_declaration_list
+            : struct_declaration
+            | struct_declaration_list struct_declaration
+            ;
+        :return: a list of lists of declarators
+        """
+        struct_declarations: list[list[CDeclarator]] = []
+
+        struct_declaration: list[CDeclarator] = self.peek_struct_declaration()
+
+        struct_declarations.append(struct_declaration)
+
+        while self.is_token_type_specifier() or self.is_token_type_qualifier():
+            struct_declaration: list[CDeclarator] = self.peek_struct_declaration()
+            struct_declarations.append(struct_declaration)
+
+        return struct_declarations
+
+    def peek_struct_declaration(self) -> list[CDeclarator]:
+        """ parse a struct declaration
+        struct_declaration
+            : specifier_qualifier_list struct_declarator_list ';'
+            ;
+        :return: a list of declarators with specifiers
+        """
+
+        specifier_qualifier_list: CSpecifierType = self.peek_specifier_qualifier_list()
+
+        struct_declarator_list: list[CDeclarator] = self.peek_struct_declarator_list()
+
+        for declarator in struct_declarator_list:
+            declarator.get_child_bottom().child = specifier_qualifier_list
+
+        self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+        self.peek_token()  # peek ; token
+
+        return struct_declarator_list
+
+    def peek_struct_declarator_list(self) -> list[CDeclarator]:
+        """ parse a struct declarator list
+        struct_declarator_list
+            : struct_declarator
+            | struct_declarator_list ',' struct_declarator
+            ;
+        :return: a list of declarators
+        """
+        declarators: list[CDeclarator] = []
+
+        declarator: CDeclarator = self.peek_struct_declarator()
+
+        declarators.append(declarator)
+
+        while self.is_token_kind(tk.TokenKind.COMMA):
+            self.peek_token()  # peek , token
+            declarator = self.peek_struct_declarator()
+            declarators.append(declarator)
+
+        return declarators
+
+    def peek_struct_declarator(self) -> CDeclarator:
+        """ parse a struct declarator
+        struct_declarator
+            : declarator
+            | ':' constant_expression  # we won't implement that
+            | declarator ':' constant_expression  # we won't implement that
+            ;
+        :return: a declarator node
+        """
+        declarator: CDeclarator = self.peek_declarator()
+
+        return declarator
+
     def peek_labeled_statement(self) -> CLabel | CCase | CDefault:
         """ parse a labeled statement
         labeled_statement

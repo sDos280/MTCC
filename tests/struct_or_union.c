@@ -9,3 +9,18 @@ struct Book {
     float price;
     char title[50], title2;
 };
+
+struct Rectangle {
+    struct Point topLeft;
+    struct Point bottomRight;
+};
+
+struct Employee {
+    char name[50];
+    union {
+        int employeeID;
+        float salary;
+    } info;
+};
+
+

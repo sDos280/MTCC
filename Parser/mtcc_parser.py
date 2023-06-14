@@ -281,10 +281,9 @@ class Parser:
                                      eh.SpecifierQualifierListInvalid)
 
                 # TODO: implement and return the CSpecifierType
-                if self.is_token_kind(tk.TokenKind.STRUCT):
-                    assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.UNION):
-                    assert False, "Not implemented"
+                if self.is_token_kind(tk.TokenKind.STRUCT) or self.is_token_kind(tk.TokenKind.UNION):
+                    type = self.peek_struct_or_union_specifier()
+                    return type
                 elif self.is_token_kind(tk.TokenKind.ENUM):
                     assert False, "Not implemented"
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break
@@ -376,10 +375,9 @@ class Parser:
                                      eh.SpecifierQualifierListInvalid)
 
                 # TODO: implement and return the CSpecifierType
-                if self.is_token_kind(tk.TokenKind.STRUCT):
-                    assert False, "Not implemented"
-                elif self.is_token_kind(tk.TokenKind.UNION):
-                    assert False, "Not implemented"
+                if self.is_token_kind(tk.TokenKind.STRUCT) or self.is_token_kind(tk.TokenKind.UNION):
+                    type = self.peek_struct_or_union_specifier()
+                    return type
                 elif self.is_token_kind(tk.TokenKind.ENUM):
                     assert False, "Not implemented"
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string):  # check if the identifier is typedef, if not break

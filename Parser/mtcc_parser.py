@@ -247,7 +247,7 @@ class Parser:
 
         return storage_class_specifier
 
-    def peek_specifier_qualifier_list(self) -> CSpecifierType:
+    def peek_specifier_qualifier_list(self) -> tuple[CSpecifierType, CTypeAttribute]:
         """
         parse a specifier qualifier list
         specifier_qualifier_list
@@ -260,15 +260,15 @@ class Parser:
         """
 
         # the idea is form https://github.com/sgraham/dyibicc/blob/main/src/parse.c#L359
+        type_attributes: CTypeAttribute = CTypeAttribute(CStorageClassSpecifier(0), CQualifierKind(0))
         specifier_counter: CSpecifierKind = CSpecifierKind(0)
-        qualifier_counter: CQualifierKind = CQualifierKind(0)
-        type: CSpecifierType = NoneNode()
+        ctype: CSpecifierType = NoneNode()
 
         while self.is_token_type_specifier() or self.is_token_type_qualifier():
             # handel qualifiers
             # TODO: make a way that those qualifiers will be really used
             if self.is_token_type_qualifier():
-                qualifier_counter |= self.peek_type_qualifier()
+                type_attributes.qualifier |= self.peek_type_qualifier()
 
             # handle struct, union, enum and typename identifier
             # when parsing those specifiers the specifier count should be 0
@@ -282,15 +282,15 @@ class Parser:
 
                 # TODO: implement and return the CSpecifierType
                 if self.is_token_kind(tk.TokenKind.STRUCT) or self.is_token_kind(tk.TokenKind.UNION):
-                    type = self.peek_struct_or_union_specifier()
-                    return type
+                    ctype = self.peek_struct_or_union_specifier()
+                    return ctype, type_attributes
                 elif self.is_token_kind(tk.TokenKind.ENUM):
-                    type = self.peek_enum_specifier()
-                    return type
+                    ctype = self.peek_enum_specifier()
+                    return ctype, type_attributes
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name():  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:
-                    return type
+                    return ctype, type_attributes
 
             current_specifier_kind: CSpecifierKind = self.peek_type_specifier()
             if current_specifier_kind == CSpecifierKind.Signed or \
@@ -307,15 +307,15 @@ class Parser:
                                  eh.SpecifierQualifierListInvalid
                                  )
             else:
-                type = specifier_type
+                ctype = specifier_type
 
-        if isinstance(type, NoneNode):
+        if isinstance(ctype, NoneNode):
             self.fatal_token(self.current_token.index,
                              "Invalid specifier in that current contex",
                              eh.SpecifierQualifierListInvalid
                              )
         else:
-            return type
+            return ctype, type_attributes
 
     def peek_type_name(self) -> CTypeName:
         """
@@ -326,16 +326,16 @@ class Parser:
             ;
         :return: a type name node
         """
-        specified_qualifier: CSpecifierType = self.peek_specifier_qualifier_list()
+        specified_qualifier, type_attributes = self.peek_specifier_qualifier_list()
 
         abstract_declarator: CType = NoneNode()
         if self.is_abstract_declarator():
             abstract_declarator: CType = self.peek_abstract_declarator()
             abstract_declarator.get_child_bottom().child = specified_qualifier
 
-        return CTypeName(abstract_declarator if not isinstance(abstract_declarator, NoneNode) else specified_qualifier)
+        return CTypeName(abstract_declarator if not isinstance(abstract_declarator, NoneNode) else specified_qualifier, attributes=type_attributes)
 
-    def peek_declaration_specifiers(self) -> CSpecifierType:
+    def peek_declaration_specifiers(self) -> tuple[CSpecifierType, CTypeAttribute]:
         """
         parse a declaration specifier
         declaration_specifiers
@@ -349,21 +349,20 @@ class Parser:
         :return: a specifier type node
         """
         # the idea is form https://github.com/sgraham/dyibicc/blob/main/src/parse.c#L359
-        storage_class_specifier_counter: CStorageClassSpecifier = CStorageClassSpecifier(0)
+        type_attributes: CTypeAttribute = CTypeAttribute(CStorageClassSpecifier(0), CQualifierKind(0))
         specifier_counter: CSpecifierKind = CSpecifierKind(0)
-        qualifier_counter: CQualifierKind = CQualifierKind(0)
-        type: CSpecifierType = NoneNode()
+        ctype: CSpecifierType = NoneNode()
 
         while self.is_token_storage_class_specifier() or self.is_token_type_specifier() or self.is_token_type_qualifier():
             # handle storage class specifiers
             # TODO: make a way that those qualifiers will be really used
             if self.is_token_storage_class_specifier():
-                storage_class_specifier_counter |= self.peek_storage_class_specifier()
+                type_attributes.storage_class_specifier |= self.peek_storage_class_specifier()
 
             # handel qualifiers
             # TODO: make a way that those qualifiers will be really used
             if self.is_token_type_qualifier():
-                qualifier_counter |= self.peek_type_qualifier()
+                type_attributes.qualifier |= self.peek_type_qualifier()
 
             # handle struct, union, enum and typename identifier
             # when parsing those specifiers the specifier count should be 0
@@ -377,15 +376,15 @@ class Parser:
 
                 # TODO: implement and return the CSpecifierType
                 if self.is_token_kind(tk.TokenKind.STRUCT) or self.is_token_kind(tk.TokenKind.UNION):
-                    type = self.peek_struct_or_union_specifier()
-                    return type
+                    ctype = self.peek_struct_or_union_specifier()
+                    return ctype, type_attributes
                 elif self.is_token_kind(tk.TokenKind.ENUM):
-                    type = self.peek_enum_specifier()
-                    return type
+                    ctype = self.peek_enum_specifier()
+                    return ctype, type_attributes
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name():  # check if the identifier is typedef, if not break
                     assert False, "Not implemented"
                 else:
-                    return type
+                    return ctype, type_attributes
 
             current_specifier_kind: CSpecifierKind = self.peek_type_specifier()
             if current_specifier_kind == CSpecifierKind.Signed or current_specifier_kind == current_specifier_kind.Unsigned:
@@ -401,15 +400,15 @@ class Parser:
                                  eh.SpecifierQualifierListInvalid
                                  )
             else:
-                type = specifier_type
+                ctype = specifier_type
 
-        if isinstance(type, NoneNode):
+        if isinstance(ctype, NoneNode):
             self.fatal_token(self.current_token.index,
                              "Invalid specifier in that current contex",
                              eh.SpecifierQualifierListInvalid
                              )
         else:
-            return type
+            return ctype, type_attributes
 
     def peek_type_qualifier_list(self) -> CQualifierKind:
         """
@@ -577,16 +576,20 @@ class Parser:
             | declaration_specifiers
         :return: a parameter declaration node
         """
-        declaration_specifiers: CSpecifierType = self.peek_specifier_qualifier_list()
+        declaration_specifiers, type_attributes = self.peek_specifier_qualifier_list()
 
         if not (self.is_abstract_declarator() or self.is_declarator()):
-            return CParameter(CIdentifier(None), declaration_specifiers)
+            cparameter = CParameter(CIdentifier(None), declaration_specifiers)
+            cparameter.attributes = type_attributes
+
+            return cparameter
 
         declarator_or_abstract_declarator: CDeclarator | NoneNode = self.peek_declarator()
 
         if not isinstance(declarator_or_abstract_declarator, NoneNode):
             declarator_or_abstract_declarator.get_child_bottom().child = declaration_specifiers
-
+            declarator_or_abstract_declarator.attributes = type_attributes
+            
             return declarator_or_abstract_declarator
         else:
             self.fatal_token(self.current_token.index,
@@ -1208,7 +1211,7 @@ class Parser:
 
         self.peek_token()  # peek the enum token
 
-        enum: CEnum = CEnum("", [])
+        cenum: CEnum = CEnum("", [])
 
         name: str = ""
 
@@ -1231,10 +1234,10 @@ class Parser:
         if name == "" and members == []:
             raise SyntaxError("An enum name and/or an enumerator list is needed")
 
-        enum.name = name
-        enum.members = members
+        cenum.name = name
+        cenum.members = members
 
-        return enum
+        return cenum
 
     def peek_initializer_list(self) -> list[Node]:
         """ parse an initializer list
@@ -1312,12 +1315,13 @@ class Parser:
             ;
         :return: a declarator or a list of declarators
         """
-        declaration_specifiers: CSpecifierType = self.peek_declaration_specifiers()
+        declaration_specifiers, type_attributes = self.peek_declaration_specifiers()
 
         init_declarator_list: list[CDeclarator] = self.peek_init_declarator_list()
 
         for declarator in init_declarator_list:
             declarator.get_child_bottom().child = declaration_specifiers
+            declarator.attributes = type_attributes
 
         self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
         self.peek_token()  # peek , token
@@ -1383,12 +1387,13 @@ class Parser:
         :return: a list of declarators with specifiers
         """
 
-        specifier_qualifier_list: CSpecifierType = self.peek_specifier_qualifier_list()
+        specifier_qualifier_list, type_attributes = self.peek_specifier_qualifier_list()
 
         struct_declarator_list: list[CDeclarator] = self.peek_struct_declarator_list()
 
         for declarator in struct_declarator_list:
             declarator.get_child_bottom().child = specifier_qualifier_list
+            declarator.attributes = type_attributes
 
         self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
         self.peek_token()  # peek ; token

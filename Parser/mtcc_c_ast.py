@@ -102,14 +102,32 @@ class CTypedef:
         }
 
 
+class CTypeAttribute:
+    def __init__(self, storage_class_specifier: CStorageClassSpecifier, qualifier: CQualifierKind):
+        self.storage_class_specifier: CStorageClassSpecifier = storage_class_specifier
+        self.qualifier: CQualifierKind = qualifier
+
+    def to_dict(self):
+        dict_ = {
+            "node": "CTypeAttribute",
+        }
+        if self.storage_class_specifier != CStorageClassSpecifier(0):
+            dict_["storage_class_specifier"] = self.storage_class_specifier.name
+        if self.qualifier != CQualifierKind(0):
+            dict_["qualifier"] = self.qualifier.name
+        return dict_
+
+
 class CTypeName:
-    def __init__(self, type: CSpecifierType | CType):
+    def __init__(self, type: CSpecifierType | CType, attributes: CTypeAttribute = CTypeAttribute(CStorageClassSpecifier(0), CQualifierKind(0))):
         self.type: CSpecifierType | CType = type
+        self.attributes: CTypeAttribute = attributes
 
     def to_dict(self):
         return {
             "node": "CTypeName",
-            "type": self.type.to_dict()
+            "type": self.type.to_dict(),
+            "attributes": self.attributes.to_dict()
         }
 
 
@@ -314,10 +332,11 @@ class Block:
 
 
 class CDeclarator:
-    def __init__(self, identifier: CIdentifier | NoneNode, type: CType, initializer: Node | list[Node] = NoneNode()):
+    def __init__(self, identifier: CIdentifier | NoneNode, type: CType, initializer: Node | list[Node] = NoneNode(), attributes: CTypeAttribute = CTypeAttribute(CStorageClassSpecifier(0), CQualifierKind(0))):
         self.identifier: CIdentifier | NoneNode = identifier
         self.type: CType = type
         self.initializer: Node | list[Node] = initializer
+        self.attributes: CTypeAttribute = attributes
 
     @property
     def child(self) -> CType:
@@ -332,7 +351,8 @@ class CDeclarator:
             "node": "CDeclarator",
             "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict(),
-            "initializer": self.initializer.to_dict()
+            "initializer": self.initializer.to_dict(),
+            "attributes": self.attributes.to_dict()
         }
 
     def get_child_bottom(self) -> Node:

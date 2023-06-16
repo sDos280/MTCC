@@ -16,16 +16,19 @@ class Lexer:
         self.tokens: list[tk.Token] = []
         self.comments: list[tk.Token] = []
 
-    def bump_line(self):
-        self.current_line += 1
-
     def peek_char(self):
+        if self.is_char('\n'):
+            self.current_line += 1
+
         self.index += 1
         self.current_char = self.file_string[self.index]
 
     def drop_char(self):
         self.index -= 1
         self.current_char = self.file_string[self.index]
+
+        if self.is_char('\n'):
+            self.current_line -= 1
 
     def is_char(self, string: str) -> bool:
         return self.current_char in string
@@ -59,7 +62,6 @@ class Lexer:
                     if self.is_char('\n'):  # check for comment end
                         str_ += self.current_char
                         self.peek_char()  # peek \n char
-                        self.bump_line()
 
                         break
 
@@ -84,8 +86,6 @@ class Lexer:
                         else:
                             raise SyntaxError(f"An block comment ender in needed, file index: {self.index}")
 
-                    if self.is_char('\n'):
-                        self.bump_line()
                     str_ += self.current_char
                     self.peek_char()  # peek comment's char
             else:
@@ -219,9 +219,6 @@ class Lexer:
                     assert False, "Not implemented"
                 continue
 
-            if self.is_char('\n'):
-                self.bump_line()
-
             str_ += self.current_char
             self.peek_char()  # peek char
 
@@ -246,9 +243,6 @@ class Lexer:
 
     def lex(self):
         while not self.is_char(END_OF_FILE):
-            if self.is_char('\n'):
-                self.peek_char()  # peek \n char
-                self.bump_line()
             if self.is_char_whitespace():
                 self.peek_char()
             elif self.is_char_numeric():

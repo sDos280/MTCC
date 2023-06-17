@@ -1346,9 +1346,6 @@ class Parser:
             declarator.get_child_bottom().child = declaration_specifiers
             declarator.attributes = type_attributes
 
-            if type_attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
-                self.typedefs.append(CTypedef(declarator))
-
         self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
         self.peek_token()  # peek , token
 

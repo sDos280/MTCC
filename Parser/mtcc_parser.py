@@ -139,7 +139,7 @@ class Parser:
 
     def is_typedef_name_name(self, name: str) -> bool:
         for typedef in self.typedefs:
-            if typedef.name.token.string == name:
+            if typedef.declarator.identifier.token.string == name:
                 return True
         return False
 
@@ -148,6 +148,15 @@ class Parser:
 
     def is_type_name(self) -> bool:
         return self.is_typedef_name()
+
+    def get_typedef_name(self, name: str) -> CTypedef:
+        for typedef in self.typedefs:
+            if typedef.declarator.identifier.token.string == name:
+                return typedef
+        self.fatal_token(self.current_token.index, f"Typedef name '{name}' not found", eh.TypedefNameNotFound)
+
+    def get_type_name(self) -> CTypedef:
+        return self.get_typedef_name(self.current_token.string)
 
     def peek_type_qualifier(self) -> CQualifierKind:
         self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token",
@@ -268,7 +277,6 @@ class Parser:
 
         while self.is_token_type_specifier() or self.is_token_type_qualifier():
             # handel qualifiers
-            # TODO: make a way that those qualifiers will be really used
             if self.is_token_type_qualifier():
                 type_attributes.qualifier |= self.peek_type_qualifier()
 
@@ -282,7 +290,6 @@ class Parser:
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 
-                # TODO: implement and return the CSpecifierType
                 if self.is_token_kind(tk.TokenKind.STRUCT) or self.is_token_kind(tk.TokenKind.UNION):
                     ctype = self.peek_struct_or_union_specifier()
                     return ctype, type_attributes
@@ -290,7 +297,8 @@ class Parser:
                     ctype = self.peek_enum_specifier()
                     return ctype, type_attributes
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name():  # check if the identifier is typedef, if not break
-                    assert False, "Not implemented"
+                    ctype = self.peek_typedef_name()
+                    return ctype, type_attributes
                 else:
                     return ctype, type_attributes
 
@@ -357,12 +365,10 @@ class Parser:
 
         while self.is_token_storage_class_specifier() or self.is_token_type_specifier() or self.is_token_type_qualifier():
             # handle storage class specifiers
-            # TODO: make a way that those qualifiers will be really used
             if self.is_token_storage_class_specifier():
                 type_attributes.storage_class_specifier |= self.peek_storage_class_specifier()
 
             # handel qualifiers
-            # TODO: make a way that those qualifiers will be really used
             if self.is_token_type_qualifier():
                 type_attributes.qualifier |= self.peek_type_qualifier()
 
@@ -376,7 +382,6 @@ class Parser:
                     self.fatal_token(self.current_token.index, "Invalid specifier in that current contex",
                                      eh.SpecifierQualifierListInvalid)
 
-                # TODO: implement and return the CSpecifierType
                 if self.is_token_kind(tk.TokenKind.STRUCT) or self.is_token_kind(tk.TokenKind.UNION):
                     ctype = self.peek_struct_or_union_specifier()
                     return ctype, type_attributes
@@ -384,7 +389,8 @@ class Parser:
                     ctype = self.peek_enum_specifier()
                     return ctype, type_attributes
                 elif self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name():  # check if the identifier is typedef, if not break
-                    assert False, "Not implemented"
+                    ctype = self.peek_typedef_name()
+                    return ctype, type_attributes
                 else:
                     return ctype, type_attributes
 
@@ -411,6 +417,21 @@ class Parser:
                              )
         else:
             return ctype, type_attributes
+
+    def peek_typedef_name(self) -> CTypedef:
+        """
+        parse a typedef name
+        typedef_name
+            : IDENTIFIER
+            ;
+        :return: a typedef node
+        """
+        self.expect_token_kind(tk.TokenKind.IDENTIFIER, "Expected an identifier", eh.TokenExpected)
+        typedef: CTypedef = self.get_type_name()
+
+        self.peek_token()  # peek the identifier token
+
+        return typedef
 
     def peek_type_qualifier_list(self) -> CQualifierKind:
         """
@@ -1326,7 +1347,7 @@ class Parser:
             declarator.attributes = type_attributes
 
             if type_attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
-                self.typedefs.append(declarator.type)
+                self.typedefs.append(CTypedef(declarator))
 
         self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
         self.peek_token()  # peek , token

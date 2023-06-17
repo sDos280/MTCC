@@ -90,15 +90,13 @@ class CUnion:
 
 
 class CTypedef:
-    def __init__(self, name: CIdentifier, type_name: CTypeName):
-        self.name: CIdentifier = name
-        self.type_name: CTypeName = type_name
+    def __init__(self, declarator: CDeclarator):
+        self.declarator: CDeclarator = declarator
 
     def to_dict(self):
         return {
             "node": "CTypedef",
-            "identifier": self.name.to_dict(),
-            "type_name": self.type_name.to_dict()
+            "identifier": self.declarator.to_dict(),
         }
 
 

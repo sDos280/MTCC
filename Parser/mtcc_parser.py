@@ -18,9 +18,8 @@ class Parser:
 
         self.enums: list[CEnum] = []
         self.typedefs: list[CTypedef] = []
-        self.variables: list[Variable] = []  # variables declension list
-        self.function_declension: list[CFunction] = []
-        self.function: list[CFunction]  # functions ast code
+        self.structs_or_unions: list[CStruct] | list[CUnion] = []
+        self.declensions_list: list[CFunction] = []
 
     def peek_token(self) -> None:  # increase the index and update the current token
         self.index += 1
@@ -144,8 +143,23 @@ class Parser:
                 return True
         return False
 
+    def is_struct_or_union_name(self, name: str) -> bool:
+        for struct_or_union in self.structs_or_unions:
+            if struct_or_union.name.token.string == name:
+                return True
+        return False
+
+    def is_enum_name(self, name: str) -> bool:
+        for enum in self.enums:
+            if enum.identifier.token.string == name:
+                return True
+        return False
+
     def is_typedef_name(self) -> bool:
         return self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string)
+
+    def is_type_name(self) -> bool:
+        return self.is_typedef_name()
 
     def peek_type_qualifier(self) -> CQualifierKind:
         self.expect_token_kind([tk.TokenKind.CONST, tk.TokenKind.VOLATILE], "Expected a type qualifier token",
@@ -589,7 +603,7 @@ class Parser:
         if not isinstance(declarator_or_abstract_declarator, NoneNode):
             declarator_or_abstract_declarator.get_child_bottom().child = declaration_specifiers
             declarator_or_abstract_declarator.attributes = type_attributes
-            
+
             return declarator_or_abstract_declarator
         else:
             self.fatal_token(self.current_token.index,
@@ -1213,10 +1227,10 @@ class Parser:
 
         cenum: CEnum = CEnum("", [])
 
-        name: str = ""
+        name: CIdentifier = CIdentifier(None)
 
         if self.is_token_kind(tk.TokenKind.IDENTIFIER):
-            name = self.current_token.string
+            name.token = self.current_token
 
             self.peek_token()  # peek the identifier token
 
@@ -1231,10 +1245,10 @@ class Parser:
 
             self.peek_token()  # peek the closing curly brace token
 
-        if name == "" and members == []:
+        if name.token.string == "" and members == []:
             raise SyntaxError("An enum name and/or an enumerator list is needed")
 
-        cenum.name = name
+        cenum.identifier = name
         cenum.members = members
 
         return cenum
@@ -1322,6 +1336,9 @@ class Parser:
         for declarator in init_declarator_list:
             declarator.get_child_bottom().child = declaration_specifiers
             declarator.attributes = type_attributes
+
+            if type_attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
+                self.typedefs.append(declarator.type)
 
         self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
         self.peek_token()  # peek , token

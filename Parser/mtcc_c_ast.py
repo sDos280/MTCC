@@ -71,7 +71,7 @@ class CStruct:
     def to_dict(self):
         return {
             "node": "CStruct",
-            "name": self.name.to_dict(),
+            "identifier": self.name.to_dict(),
             "members": [[member.to_dict() for member in members] for members in self.members]
         }
 
@@ -84,7 +84,7 @@ class CUnion:
     def to_dict(self):
         return {
             "node": "CUnion",
-            "name": self.name.to_dict(),
+            "identifier": self.name.to_dict(),
             "members": [[member.to_dict() for member in members] for members in self.members]
         }
 
@@ -97,7 +97,7 @@ class CTypedef:
     def to_dict(self):
         return {
             "node": "CTypedef",
-            "name": self.name.to_dict(),
+            "identifier": self.name.to_dict(),
             "type_name": self.type_name.to_dict()
         }
 
@@ -246,21 +246,21 @@ class CEnumMember:
     def to_dict(self):
         return {
             "node": "CEnumMember",
-            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "identifier": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "value": self.const_expression.to_dict()
         }
 
 
 class CEnum:
-    def __init__(self, name: str, members: list[CEnumMember]):
-        self.name: str = name
+    def __init__(self, identifier: CIdentifier | NoneNode, members: list[CEnumMember]):
+        self.identifier: CIdentifier | NoneNode = identifier
         self.members: list[CEnumMember] = members
         self.current_member_value: Node = Number(0)
 
     def to_dict(self):
         return {
             "node": "CEnum",
-            "name": self.name,
+            "identifier": self.identifier.to_dict() if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "members": [member.to_dict() for member in self.members]
         }
 
@@ -313,7 +313,7 @@ class Variable:
     def to_dict(self):
         return {
             "node": "Variable",
-            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "identifier": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict()
         }
 
@@ -349,7 +349,7 @@ class CDeclarator:
     def to_dict(self):
         return {
             "node": "CDeclarator",
-            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "identifier": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict(),
             "initializer": self.initializer.to_dict(),
             "attributes": self.attributes.to_dict()
@@ -433,7 +433,7 @@ class CFunction:
     def to_dict(self):
         return {
             "node": "CFunction",
-            "name": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
+            "identifier": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "parameters": [parameter.to_dict() for parameter in self.parameters],
             "return_type": self.return_type.to_dict()
         }

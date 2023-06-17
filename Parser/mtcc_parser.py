@@ -143,18 +143,6 @@ class Parser:
                 return True
         return False
 
-    def is_struct_or_union_name(self, name: str) -> bool:
-        for struct_or_union in self.structs_or_unions:
-            if struct_or_union.name.token.string == name:
-                return True
-        return False
-
-    def is_enum_name(self, name: str) -> bool:
-        for enum in self.enums:
-            if enum.identifier.token.string == name:
-                return True
-        return False
-
     def is_typedef_name(self) -> bool:
         return self.is_token_kind(tk.TokenKind.IDENTIFIER) and self.is_typedef_name_name(self.current_token.string)
 
@@ -1221,16 +1209,16 @@ class Parser:
         return members
 
     def peek_enum_specifier(self) -> CEnum:
-        self.expect_token_kind(tk.TokenKind.ENUM, "An enum keyword was expected", SyntaxError)
+        self.expect_token_kind(tk.TokenKind.ENUM, "An enum keyword was expected", eh.TokenExpected)
 
         self.peek_token()  # peek the enum token
 
-        cenum: CEnum = CEnum("", [])
+        cenum: CEnum = CEnum(CIdentifier(None), [])
 
-        name: CIdentifier = CIdentifier(None)
+        identifier: CIdentifier = CIdentifier(None)
 
         if self.is_token_kind(tk.TokenKind.IDENTIFIER):
-            name.token = self.current_token
+            identifier.token = self.current_token
 
             self.peek_token()  # peek the identifier token
 
@@ -1241,14 +1229,14 @@ class Parser:
 
             members = self.peek_enumerator_list()
 
-            self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "An enumerator list closer is needed", SyntaxError)
+            self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "An enumerator list closer is needed", eh.TokenExpected)
 
             self.peek_token()  # peek the closing curly brace token
 
-        if name.token.string == "" and members == []:
+        if identifier.token.string == "" and members == []:
             raise SyntaxError("An enum name and/or an enumerator list is needed")
 
-        cenum.identifier = name
+        cenum.identifier = identifier
         cenum.members = members
 
         return cenum

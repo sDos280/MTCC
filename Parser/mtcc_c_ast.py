@@ -191,12 +191,13 @@ class CUnaryOpKind(enum.Enum):
     Minus = enum.auto()  # '-'
     BitwiseNOT = enum.auto()  # '~'
     LogicalNOT = enum.auto()  # '!'
+    Sizeof = enum.auto()  # 'sizeof'
 
 
 class CUnaryOp:
-    def __init__(self, kind: CUnaryOpKind, expression: Node):
+    def __init__(self, kind: CUnaryOpKind, expression: Node | CTypeName):
         self.kind: CUnaryOpKind = kind
-        self.expression: Node = expression
+        self.expression: Node | CTypeName = expression
 
     def to_dict(self):
         return {
@@ -487,6 +488,17 @@ class CFunctionCall:
             "node": "CFunctionCall",
             "expression": self.expression.to_dict(),
             "parameters_type": [parameter_type.to_dict() for parameter_type in self.parameters_type]
+        }
+
+
+class CSizeof:
+    def __init__(self, expression: Node):
+        self.expression: Node = expression
+
+    def to_dict(self):
+        return {
+            "node": "CSizeof",
+            "expression": self.expression.to_dict()
         }
 
 

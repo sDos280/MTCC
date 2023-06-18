@@ -844,9 +844,6 @@ class Parser:
 
         return primary_expression
 
-    """def peek_argument_expression_list(self) -> Node:
-        assert False, \"Not implemented\""""
-
     def peek_unary_expression(self) -> Node:
         """
         parse a unary expression
@@ -905,7 +902,21 @@ class Parser:
 
             return CUnaryOp(CUnaryOpKind.LogicalNOT, cast_expression)
         elif self.is_token_kind(tk.TokenKind.SIZEOF):
-            assert False, "Not implemented"
+            self.peek_token()  # peek sizeof token
+            if self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
+                self.peek_token()  # peek ( token
+                if self.is_token_type_qualifier() or self.is_token_type_specifier():
+                    type_name: CTypeName = self.peek_type_name()
+                    self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
+                    self.peek_token()  # peek ) token
+
+                    return CUnaryOp(CUnaryOpKind.Sizeof, type_name)
+                else:
+                    self.drop_token()  # drop to the ( token
+
+            unary_expression: Node = self.peek_unary_expression()
+
+            return CUnaryOp(CUnaryOpKind.Sizeof, unary_expression)
 
         postfix_expression: Node = self.peek_postfix_expression()
 

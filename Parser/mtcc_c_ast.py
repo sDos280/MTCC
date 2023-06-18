@@ -178,15 +178,13 @@ class CBinaryOp:
 
 class CUnaryOpKind(enum.Enum):
     """"""
-    """
-        # https://www.scaler.com/topics/pre-increment-and-post-increment-in-c/
-        # increase/increase then return
-        PreIncrease = enum.auto()
-        PreDecrease = enum.auto()
-        # return then increase/increase
-        PostIncrease = enum.auto()
-        PostDecrease = enum.auto()
-    """
+    # https://www.scaler.com/topics/pre-increment-and-post-increment-in-c/
+    # increase/increase then return
+    PreIncrease = enum.auto()
+    PreDecrease = enum.auto()
+    # return then increase/increase
+    PostIncrease = enum.auto()
+    PostDecrease = enum.auto()
     Reference = enum.auto()  # '&'
     Dereference = enum.auto()  # '*'
     Plus = enum.auto()  # '+'

@@ -800,10 +800,10 @@ class Parser:
             assert False, "Not implemented"
 
         elif self.is_token_kind(tk.TokenKind.INC_OP):
-            assert False, "Not implemented"
+            return CUnaryOp(CUnaryOpKind.PostIncrease, primary_expression)
 
         elif self.is_token_kind(tk.TokenKind.DEC_OP):
-            assert False, "Not implemented"
+            return CUnaryOp(CUnaryOpKind.PreDecrease, primary_expression)
 
         return primary_expression
 
@@ -824,9 +824,11 @@ class Parser:
         :return: a unary expression node
         """
         if self.is_token_kind(tk.TokenKind.INC_OP):
-            assert False, "Not implemented"
+            unary_expression: Node = self.peek_unary_expression()
+            return CUnaryOp(CUnaryOpKind.PreIncrease, unary_expression)
         elif self.is_token_kind(tk.TokenKind.DEC_OP):
-            assert False, "Not implemented"
+            unary_expression: Node = self.peek_unary_expression()
+            return CUnaryOp(CUnaryOpKind.PreDecrease, unary_expression)
         elif self.is_token_kind(tk.TokenKind.AMPERSAND):
             self.peek_token()  # peek & token
 

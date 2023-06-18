@@ -557,7 +557,7 @@ class Parser:
         direct_declarator_module: Node | list[CParameter] = self.peek_direct_declarator_module()
 
         if isinstance(direct_declarator_module, list):  # need to convert direct_declarator_module to CFunction
-            direct_declarator_module = CFunction(NoneNode(), direct_declarator_module, NoneNode())
+            direct_declarator_module = CFunction(direct_declarator_module, NoneNode())
 
         declarator.type = direct_declarator_module
 
@@ -565,7 +565,7 @@ class Parser:
             if self.is_direct_abstract_declarator():
                 direct_abstract_declarator_module: CType = self.peek_direct_abstract_declarator_module()
                 if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
-                    declarator.get_child_bottom().child = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
+                    declarator.get_child_bottom().child = CFunction(direct_abstract_declarator_module, NoneNode())
                 else:
                     declarator.get_child_bottom().child = direct_abstract_declarator_module
             else:
@@ -670,14 +670,14 @@ class Parser:
         # return the top and bottom of the direct abstract declarator
         direct_abstract_declarator_module: CType = self.peek_direct_abstract_declarator_module()
         if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
-            direct_abstract_declarator_module = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
+            direct_abstract_declarator_module = CFunction(direct_abstract_declarator_module, NoneNode())
         direct_abstract_declarator: CType = direct_abstract_declarator_module
 
         while True:
             if self.is_direct_abstract_declarator():
                 direct_abstract_declarator_module: CType = self.peek_direct_abstract_declarator_module()
                 if isinstance(direct_abstract_declarator_module, list):  # need to convert direct_abstract_declarator_module to CFunction
-                    direct_abstract_declarator.get_child_bottom().child = CFunction(NoneNode(), direct_abstract_declarator_module, NoneNode())
+                    direct_abstract_declarator.get_child_bottom().child = CFunction(direct_abstract_declarator_module, NoneNode())
                 else:
                     direct_abstract_declarator.get_child_bottom().child = direct_abstract_declarator_module
             else:
@@ -1812,5 +1812,61 @@ class Parser:
         else:
             self.fatal_token(self.current_token.index, "A jump statement is needed", eh.TokenExpected)
 
-    def translation_unit(self) -> None:
-        assert False, "Not implemented yet"
+    def peek_translation_unit(self) -> list[Node]:
+        translation_unit: list[Node] = []
+
+        while not self.is_token_kind(tk.TokenKind.END):
+            external_declaration = self.peek_external_declaration()
+            translation_unit.append(external_declaration)
+
+        return translation_unit
+
+    def peek_external_declaration(self) -> list[CDeclarator] | CDeclarator:
+        """
+        external_declaration
+            : function_definition
+            | declaration
+            ;
+
+        function_definition
+            : declaration_specifiers declarator declaration_list compound_statement
+            | declaration_specifiers declarator compound_statement  # we will only implement that one
+            | declarator declaration_list compound_statement
+            | declarator compound_statement
+            ;
+
+        :return: a node of type CFunctionDefinition or a list of CDeclarator
+        """
+
+        declaration_specifiers, type_attributes = self.peek_declaration_specifiers()
+
+        declarators_index: int = self.current_token.index
+
+        declarators: list[CDeclarator] = [self.peek_declarator()]
+
+        if self.is_token_kind(tk.TokenKind.COMMA) or self.is_token_kind(tk.TokenKind.EQUALS):  # checks if the external_declaration is declaration
+            self.peek_token()  # peek , or = token
+            init_declarator_list: list[CDeclarator] = self.peek_init_declarator_list()
+
+            declarators.extend(init_declarator_list)
+
+            for declarator in declarators:
+                declarator.get_child_bottom().child = declaration_specifiers
+                declarator.attributes = type_attributes
+
+            self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
+            self.peek_token()  # peek ; token
+
+            return declarators
+        else:  # checks if the external_declaration is function_definition
+            compound_statement: CCompound = self.peek_compound_statement()
+
+            if not isinstance(declarators[0].get_child_bottom(), CFunction):
+                self.fatal_token(declarators_index, "A function definition is needed", eh.TokenExpected)
+
+            declarators[0].attributes = type_attributes
+            declarators[0].get_child_bottom().compound_statement = compound_statement
+            declarators[0].get_child_bottom().child = declaration_specifiers
+
+            return declarators[0]
+

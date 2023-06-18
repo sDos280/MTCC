@@ -7,3 +7,4 @@ import declarator_test
 import declaration_test
 import statement_test
 import struct_or_union_test
+import external_declaration

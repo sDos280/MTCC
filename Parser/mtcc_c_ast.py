@@ -450,18 +450,23 @@ class CPointer:
 
 
 class CFunction:
-    def __init__(self, identifier: CIdentifier | NoneNode, parameters: list[CParameter], return_type: CType):
-        self.identifier: CIdentifier | NoneNode = identifier
+    def __init__(self, parameters: list[CParameter], return_type: CType, compound_statement: CCompound = NoneNode()):
         self.parameters: list[CParameter] = parameters
         self.return_type: CType = return_type
+        self.compound_statement: CCompound = compound_statement
 
     def to_dict(self):
-        return {
+
+        dict_ = var = {
             "node": "CFunction",
-            "identifier": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "parameters": [parameter.to_dict() for parameter in self.parameters],
-            "return_type": self.return_type.to_dict()
         }
+
+        dict_["compound_statement"] = self.compound_statement.to_dict() if not isinstance(self.compound_statement, NoneNode) else self.compound_statement.to_dict()
+
+        dict_["return_type"] = self.return_type.to_dict()
+
+        return dict_
 
     @property
     def child(self) -> CType:

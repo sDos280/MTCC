@@ -795,10 +795,12 @@ class Parser:
         primary_expression: Node = self.peek_primary_expression()
 
         if self.is_token_kind(tk.TokenKind.OPENING_BRACKET):
-            assert False, "Not implemented"
+            self.peek_token()  # peek [ token
+            expression: Node = self.peek_expression()
+            self.expect_token_kind(tk.TokenKind.CLOSING_BRACKET, "Expected a ] token", eh.TokenExpected)
+            self.peek_token()  # peek ] token
 
-        elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-            assert False, "Not implemented"
+            return CArrayAccess(primary_expression, expression)
 
         elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
             assert False, "Not implemented"

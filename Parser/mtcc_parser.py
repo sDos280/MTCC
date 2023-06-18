@@ -790,7 +790,12 @@ class Parser:
             | postfix_expression INC_OP
             | postfix_expression DEC_OP
             ;
-        :return:
+
+        argument_expression_list
+            : assignment_expression
+            | argument_expression_list ',' assignment_expression
+            ;
+        :return:  a postfix expression node
         """
         primary_expression: Node = self.peek_primary_expression()
 
@@ -803,7 +808,23 @@ class Parser:
             return CArrayAccess(primary_expression, expression)
 
         elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
-            assert False, "Not implemented"
+            self.peek_token()  # peek ( token
+            if self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
+                self.peek_token()  # peek ) token
+
+                return CFunctionCall(primary_expression, list[Node]())
+            else:
+                argument_expression_list: list[Node] = []
+
+                while not self.is_token_kind(tk.TokenKind.CLOSING_PARENTHESIS):
+                    argument_expression_list.append(self.peek_assignment_expression())
+                    if self.is_token_kind(tk.TokenKind.COMMA):
+                        self.peek_token()  # peek , token
+
+                self.expect_token_kind(tk.TokenKind.CLOSING_PARENTHESIS, "Expected a ) token", eh.TokenExpected)
+                self.peek_token()  # peek ) token
+
+                return CFunctionCall(primary_expression, argument_expression_list)
 
         elif self.is_token_kind(tk.TokenKind.PERIOD):
             self.peek_token()  # peek . token

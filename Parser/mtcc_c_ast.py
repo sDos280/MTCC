@@ -221,6 +221,19 @@ class CTernaryOp:
         }
 
 
+class CArrayAccess:
+    def __init__(self, expression: Node, index: Node):
+        self.expression: Node = expression
+        self.index: Node = index
+
+    def to_dict(self):
+        return {
+            "node": "CArrayAccess",
+            "expression": self.expression.to_dict(),
+            "index": self.index.to_dict()
+        }
+
+
 class CMemberAccess:
     """a node class that represents a member access (for structs, unions, and enums)"""
 
@@ -464,10 +477,17 @@ class CFunction:
             return self.child if not isinstance(self.child, NoneNode) else self
 
 
-class FunctionCall:
-    def __init__(self, function: CFunction, parameters_type: list):
-        self.function: CFunction = function
+class CFunctionCall:
+    def __init__(self, expression: Node, parameters_type: list[Node]):
+        self.expression: Node = expression
         self.parameters_type: list = parameters_type
+
+    def to_dict(self):
+        return {
+            "node": "CFunctionCall",
+            "expression": self.expression.to_dict(),
+            "parameters_type": [parameter_type.to_dict() for parameter_type in self.parameters_type]
+        }
 
 
 class CGoto:
@@ -639,7 +659,7 @@ Node = Union[
     CBinaryOp,
     CUnaryOp,
     CCast,
-    FunctionCall,
+    CFunctionCall,
     CPointer,
     CArray,
     CFunction,
@@ -656,7 +676,8 @@ Node = Union[
     CReturn,
     CWhile,
     CFor,
-    CMemberAccess
+    CMemberAccess,
+    CArrayAccess,
 ]
 
 specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {

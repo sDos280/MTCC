@@ -927,7 +927,6 @@ class Parser:
             self.peek_token()  # peek ( token
 
             if self.is_token_type_qualifier() or self.is_token_type_specifier():
-                # TODO: need to check if the specifier (of token identifiers) is a typedef in not that should be an unary expression
                 type_name: CTypeName = self.peek_type_name()
             else:  # not a cast but a "(" expression ")"
                 # we need to drop a token

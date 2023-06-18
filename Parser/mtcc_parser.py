@@ -1812,8 +1812,8 @@ class Parser:
         else:
             self.fatal_token(self.current_token.index, "A jump statement is needed", eh.TokenExpected)
 
-    def peek_translation_unit(self) -> list[Node]:
-        translation_unit: list[Node] = []
+    def peek_translation_unit(self) -> list[list[CDeclarator] | CDeclarator]:
+        translation_unit: list[list[CDeclarator] | CDeclarator] = []
 
         while not self.is_token_kind(tk.TokenKind.END):
             external_declaration = self.peek_external_declaration()

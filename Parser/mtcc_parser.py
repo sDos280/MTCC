@@ -808,7 +808,8 @@ class Parser:
             return CMemberAccess(primary_expression, self.peek_identifier())
 
         elif self.is_token_kind(tk.TokenKind.PTR_OP):
-            assert False, "Not implemented"
+            self.peek_token()  # peek -> token
+            return CMemberAccess(CUnaryOp(CUnaryOpKind.Dereference, primary_expression), self.peek_identifier())
 
         elif self.is_token_kind(tk.TokenKind.INC_OP):
             self.peek_token()  # peek ++ token
@@ -820,8 +821,8 @@ class Parser:
 
         return primary_expression
 
-    def peek_argument_expression_list(self) -> Node:
-        assert False, "Not implemented"
+    """def peek_argument_expression_list(self) -> Node:
+        assert False, \"Not implemented\""""
 
     def peek_unary_expression(self) -> Node:
         """

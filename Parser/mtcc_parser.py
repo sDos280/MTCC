@@ -770,6 +770,13 @@ class Parser:
         else:
             self.fatal_token(self.current_token.index, "Expected a primary expression token", eh.PrimaryExpressionNotFound)
 
+    def peek_identifier(self) -> CIdentifier:
+        self.expect_token_kind(tk.TokenKind.IDENTIFIER, "Expected an identifier token", eh.TokenExpected)
+        identifier: CIdentifier = CIdentifier(self.current_token)
+        self.peek_token()  # peek identifier token
+
+        return identifier
+
     def peek_postfix_expression(self) -> Node:
         """
         parse a postfix expression
@@ -796,13 +803,19 @@ class Parser:
         elif self.is_token_kind(tk.TokenKind.OPENING_PARENTHESIS):
             assert False, "Not implemented"
 
+        elif self.is_token_kind(tk.TokenKind.PERIOD):
+            self.peek_token()  # peek . token
+            return CMemberAccess(primary_expression, self.peek_identifier())
+
         elif self.is_token_kind(tk.TokenKind.PTR_OP):
             assert False, "Not implemented"
 
         elif self.is_token_kind(tk.TokenKind.INC_OP):
+            self.peek_token()  # peek ++ token
             return CUnaryOp(CUnaryOpKind.PostIncrease, primary_expression)
 
         elif self.is_token_kind(tk.TokenKind.DEC_OP):
+            self.peek_token()  # peek -- token
             return CUnaryOp(CUnaryOpKind.PreDecrease, primary_expression)
 
         return primary_expression
@@ -824,9 +837,11 @@ class Parser:
         :return: a unary expression node
         """
         if self.is_token_kind(tk.TokenKind.INC_OP):
+            self.peek_token()  # peek ++ token
             unary_expression: Node = self.peek_unary_expression()
             return CUnaryOp(CUnaryOpKind.PreIncrease, unary_expression)
         elif self.is_token_kind(tk.TokenKind.DEC_OP):
+            self.peek_token()  # peek -- token
             unary_expression: Node = self.peek_unary_expression()
             return CUnaryOp(CUnaryOpKind.PreDecrease, unary_expression)
         elif self.is_token_kind(tk.TokenKind.AMPERSAND):

@@ -221,6 +221,21 @@ class CTernaryOp:
         }
 
 
+class CMemberAccess:
+    """a node class that represents a member access (for structs, unions, and enums)"""
+
+    def __init__(self, expression: Node, member: CIdentifier):
+        self.expression: Node = expression
+        self.member: CIdentifier = member
+
+    def to_dict(self):
+        return {
+            "node": "CMemberAccess",
+            "expression": self.expression.to_dict(),
+            "member": self.member.to_dict()
+        }
+
+
 class CCast:
     def __init__(self, cast_to: CTypeName, cast_expression: Node):
         self.cast_to: CTypeName = cast_to
@@ -640,7 +655,8 @@ Node = Union[
     CSwitch,
     CReturn,
     CWhile,
-    CFor
+    CFor,
+    CMemberAccess
 ]
 
 specifier_cases: dict[CSpecifierKind.Void, CPrimitiveDataTypes] = {

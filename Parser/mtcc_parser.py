@@ -1346,7 +1346,13 @@ class Parser:
         """
 
         if self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):
-            return self.peek_initializer_list()
+            self.peek_token()  # peek { token
+            initializer_list: list[Node] = self.peek_initializer_list()
+
+            self.expect_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE, "An initializer list closer is needed", eh.TokenExpected)
+            self.peek_token()  # peek } token
+
+            return initializer_list
         else:
             return self.peek_assignment_expression()
 
@@ -1844,11 +1850,19 @@ class Parser:
 
         declarators: list[CDeclarator] = [self.peek_declarator()]
 
-        if self.is_token_kind(tk.TokenKind.COMMA) or self.is_token_kind(tk.TokenKind.EQUALS):  # checks if the external_declaration is declaration
-            self.peek_token()  # peek , or = token
-            init_declarator_list: list[CDeclarator] = self.peek_init_declarator_list()
+        if self.is_token_kind(tk.TokenKind.COMMA) or self.is_token_kind(tk.TokenKind.EQUALS) or self.is_token_kind(tk.TokenKind.SEMICOLON):  # checks if the external_declaration is declaration
+            if self.is_token_kind(tk.TokenKind.EQUALS):
+                self.peek_token()  # peek = token
 
-            declarators.extend(init_declarator_list)
+                initializer: Node = self.peek_initializer()
+
+                declarators[0].initializer = initializer
+
+            if self.is_token_kind(tk.TokenKind.COMMA):
+                self.peek_token()  # peek , token
+                init_declarator_list: list[CDeclarator] = self.peek_init_declarator_list()
+
+                declarators.extend(init_declarator_list)
 
             for declarator in declarators:
                 declarator.get_child_bottom().child = declaration_specifiers
@@ -1869,4 +1883,3 @@ class Parser:
             declarators[0].get_child_bottom().child = declaration_specifiers
 
             return declarators[0]
-

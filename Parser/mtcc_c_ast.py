@@ -376,7 +376,7 @@ class CDeclarator:
             "node": "CDeclarator",
             "identifier": str(self.identifier) if not isinstance(self.identifier, NoneNode) else self.identifier.to_dict(),
             "type": self.type.to_dict(),
-            "initializer": self.initializer.to_dict(),
+            "initializer": self.initializer.to_dict() if not isinstance(self.initializer, list) else [init.to_dict() for init in self.initializer],
             "attributes": self.attributes.to_dict()
         }
 

@@ -16,9 +16,7 @@ class Parser:
 
         self.current_block: Block | None = None
 
-        self.enums: list[CEnum] = []
         self.typedefs: list[CTypedef] = []
-        self.structs_or_unions: list[CStruct] | list[CUnion] = []
         self.declensions_list: list[CFunction] = []
 
     def peek_token(self) -> None:  # increase the index and update the current token
@@ -1822,8 +1820,14 @@ class Parser:
         translation_unit: list[list[CDeclarator] | CDeclarator] = []
 
         while not self.is_token_kind(tk.TokenKind.END):
-            external_declaration = self.peek_external_declaration()
+            external_declaration: list[CDeclarator] | CDeclarator = self.peek_external_declaration()
+
             translation_unit.append(external_declaration)
+
+            # add typedefs to the list self.typedefs list
+            if isinstance(external_declaration, list):
+                if external_declaration[0].attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
+                    self.typedefs.append(CTypedef(external_declaration[0]))
 
         return translation_unit
 

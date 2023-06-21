@@ -39,6 +39,16 @@ enum Days {
     SUNDAY
 };
 
+typedef struct {
+	int x;
+	int y;
+} Point;
+
+typedef struct {
+	int x;
+	int y;
+} Point;
+
 int main() {
     // Variables and basic arithmetic
     int a = 10;
@@ -52,7 +62,7 @@ int main() {
 	int i;
 	int number = 7;
 	int numbers[5] = {1, 2, 3, 4, 5};
-	struct Point p1;
+	Point p1;
     enum Days today = WEDNESDAY;
 
 	p1.x = 3;

@@ -42,7 +42,7 @@ enum Days {
 typedef struct {
 	int x;
 	int y;
-} Point;
+} lol, GG;
 
 typedef struct {
 	int x;

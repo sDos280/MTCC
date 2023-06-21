@@ -1820,14 +1820,21 @@ class Parser:
         translation_unit: list[list[CDeclarator] | CDeclarator] = []
 
         while not self.is_token_kind(tk.TokenKind.END):
+            index_: int = self.current_token.index
+
             external_declaration: list[CDeclarator] | CDeclarator = self.peek_external_declaration()
 
             translation_unit.append(external_declaration)
 
             # add typedefs to the list self.typedefs list
             if isinstance(external_declaration, list):
-                if external_declaration[0].attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
-                    self.typedefs.append(CTypedef(external_declaration[0]))
+                for declarator in external_declaration:
+                    if declarator.attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
+                        self.typedefs.append(CTypedef(declarator))
+            else:
+                if external_declaration.attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
+                    # function definition cannot be typedef
+                    self.fatal_token(external_declaration.identifier.token.index, "A typedef cannot be a function definition", eh.InvalidTypedef)
 
         return translation_unit
 

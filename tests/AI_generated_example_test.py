@@ -17,3 +17,5 @@ for external_declaration in translation_unit:
     else:
         for declaration in external_declaration:
             print(json.dumps(declaration.to_dict(), indent=2), end='\n\n')
+
+print()

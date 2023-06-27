@@ -1,6 +1,7 @@
 import Parser.mtcc_lexer
 import Parser.mtcc_parser
 import Parser.mtcc_c_ast
+import Parser.mtcc_ast_validator
 import json
 
 lexer = Parser.mtcc_lexer.Lexer('AI_generated_example.c')
@@ -18,4 +19,5 @@ for external_declaration in translation_unit:
         for declaration in external_declaration:
             print(json.dumps(declaration.to_dict(), indent=2), end='\n\n')
 
-print()
+validator = Parser.mtcc_ast_validator.AstValidator(parser, translation_unit)
+validator.look_for_duplicate_identifiers()

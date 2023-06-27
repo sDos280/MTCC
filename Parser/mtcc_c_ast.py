@@ -587,14 +587,14 @@ class CDefault:
 
 
 class CCompound:
-    def __init__(self, declarations: list[list[CDeclarator]], statements: list[Node]):
-        self.declarations: list[list[CDeclarator]] = declarations
+    def __init__(self, declarations: list[CDeclarator], statements: list[Node]):
+        self.declarations: list[CDeclarator] = declarations
         self.statements: list[Node] = statements
 
     def to_dict(self):
         return {
             "node": "CCompound",
-            "declarations": [[declarator.to_dict() for declarator in declaration] for declaration in self.declarations],
+            "declarations": [declarator.to_dict() for declarator in self.declarations],
             "statements": [statement.to_dict() for statement in self.statements]
         }
 

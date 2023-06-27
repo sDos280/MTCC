@@ -6,7 +6,7 @@ import json
 lexer = Parser.mtcc_lexer.Lexer('enum.c')
 lexer.lex()
 
-parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
+parser = Parser.mtcc_parser.CParser(lexer.tokens, lexer.file_string)
 
 for i in range(2):
     enum: Parser.mtcc_c_ast.CEnum = parser.peek_enum_specifier()

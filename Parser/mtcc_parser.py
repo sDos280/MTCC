@@ -4,7 +4,7 @@ import Parser.mtcc_error_handler as eh
 from Parser.mtcc_c_ast import *
 
 
-class Parser:
+class CParser:
     def __init__(self, tokens: list[tk.Token], source_string: str):
         self.tokens: list[tk.Token] = tokens
         for token_index in range(len(self.tokens)):

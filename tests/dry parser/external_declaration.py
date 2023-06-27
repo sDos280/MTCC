@@ -6,7 +6,7 @@ import json
 lexer = Parser.mtcc_lexer.Lexer('external_declaration.c')
 lexer.lex()
 
-parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
+parser = Parser.mtcc_parser.CParser(lexer.tokens, lexer.file_string)
 
 for i in range(2):
     external_declaration: list[Parser.mtcc_c_ast.CDeclarator] | Parser.mtcc_c_ast.CDeclarator = parser.peek_external_declaration()

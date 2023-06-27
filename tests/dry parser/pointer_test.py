@@ -6,7 +6,7 @@ import json
 lexer = Parser.mtcc_lexer.Lexer('pointer.c')
 lexer.lex()
 
-parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
+parser = Parser.mtcc_parser.CParser(lexer.tokens, lexer.file_string)
 
 for i in range(2):
     pointer: Parser.mtcc_c_ast.CPointer = parser.peek_pointer()

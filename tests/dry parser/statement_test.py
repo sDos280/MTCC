@@ -6,7 +6,7 @@ import json
 lexer = Parser.mtcc_lexer.Lexer('statement.c')
 lexer.lex()
 
-parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
+parser = Parser.mtcc_parser.CParser(lexer.tokens, lexer.file_string)
 
 for i in range(4):
     statement: Parser.mtcc_c_ast.Node = parser.peek_statement()

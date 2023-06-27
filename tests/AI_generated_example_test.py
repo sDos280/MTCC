@@ -6,7 +6,7 @@ import json
 lexer = Parser.mtcc_lexer.Lexer('AI_generated_example.c')
 lexer.lex()
 
-parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
+parser = Parser.mtcc_parser.CParser(lexer.tokens, lexer.file_string)
 
 translation_unit = parser.peek_translation_unit()
 

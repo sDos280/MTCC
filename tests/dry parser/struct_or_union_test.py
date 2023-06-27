@@ -6,7 +6,7 @@ import json
 lexer = Parser.mtcc_lexer.Lexer('struct_or_union.c')
 lexer.lex()
 
-parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
+parser = Parser.mtcc_parser.CParser(lexer.tokens, lexer.file_string)
 
 for i in range(5):
     struct_or_union: Parser.mtcc_c_ast.CStruct | Parser.mtcc_c_ast.CUnion = parser.peek_struct_or_union_specifier()

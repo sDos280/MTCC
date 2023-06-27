@@ -11,6 +11,6 @@ if __name__ == '__main__':
 
     # [print(token.string) for token in lexer.tokens]
 
-    parser = Parser.mtcc_parser.Parser(lexer.tokens, lexer.file_string)
+    parser = Parser.mtcc_parser.CParser(lexer.tokens, lexer.file_string)
 
     parser.translation_unit()

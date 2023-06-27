@@ -1581,7 +1581,7 @@ class Parser:
         if self.is_token_type_specifier() or self.is_token_type_qualifier() or self.is_token_storage_class_specifier():
             while self.is_token_type_specifier() or self.is_token_type_qualifier() or self.is_token_storage_class_specifier():
                 declaration: list[CDeclarator] = self.peek_declaration()
-                compound.declarations.append(declaration)
+                compound.declarations.extend(declaration)
 
         while not self.is_token_kind(tk.TokenKind.CLOSING_CURLY_BRACE):
             statement: Node = self.peek_statement()
@@ -1816,29 +1816,31 @@ class Parser:
         else:
             self.fatal_token(self.current_token.index, "A jump statement is needed", eh.TokenExpected)
 
-    def peek_translation_unit(self) -> list[list[CDeclarator] | CDeclarator]:
-        translation_unit: list[list[CDeclarator] | CDeclarator] = []
+    def peek_translation_unit(self) -> list[CDeclarator]:
+        translation_unit: list[CDeclarator] = []
 
         while not self.is_token_kind(tk.TokenKind.END):
             index_: int = self.current_token.index
 
-            external_declaration: list[CDeclarator] | CDeclarator = self.peek_external_declaration()
+            external_declaration: list[CDeclarator] = self.peek_external_declaration()
 
-            translation_unit.append(external_declaration)
+            translation_unit.extend(external_declaration)
 
             # add typedefs to the list self.typedefs list
-            if isinstance(external_declaration, list):
-                for declarator in external_declaration:
-                    if declarator.attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
-                        self.typedefs.append(CTypedef(declarator))
-            else:
-                if external_declaration.attributes.storage_class_specifier == CStorageClassSpecifier.Typedef:
-                    # function definition cannot be typedef
-                    self.fatal_token(external_declaration.identifier.token.index, "A typedef cannot be a function definition", eh.InvalidTypedef)
+            for declarator in external_declaration:
+                if isinstance(declarator.type, CPointer) or isinstance(declarator.type, CArray):
+                    bottom: CDeclarator = declarator.get_child_bottom()
+                else:
+                    bottom = declarator
+
+                if declarator.attributes.storage_class_specifier == CStorageClassSpecifier.Typedef and not isinstance(declarator, CFunction):
+                    self.typedefs.append(CTypedef(declarator))
+                elif declarator.attributes.storage_class_specifier == CStorageClassSpecifier.Typedef and isinstance(declarator, CFunction):
+                    self.fatal_token(index_, "A typedef cannot be a function definition", eh.InvalidTypedef)
 
         return translation_unit
 
-    def peek_external_declaration(self) -> list[CDeclarator] | CDeclarator:
+    def peek_external_declaration(self) -> list[CDeclarator]:
         """
         external_declaration
             : function_definition
@@ -1882,7 +1884,6 @@ class Parser:
             self.expect_token_kind(tk.TokenKind.SEMICOLON, "A semicolon is needed", eh.TokenExpected)
             self.peek_token()  # peek ; token
 
-            return declarators
         else:  # checks if the external_declaration is function_definition
             compound_statement: CCompound = self.peek_compound_statement()
 
@@ -1893,4 +1894,4 @@ class Parser:
             declarators[0].get_child_bottom().compound_statement = compound_statement
             declarators[0].get_child_bottom().child = declaration_specifiers
 
-            return declarators[0]
+        return declarators

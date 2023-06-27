@@ -1,5 +1,7 @@
 // Function to calculate the nth Fibonacci number
 int fibonacci(int n) {
+    float hh, hh;
+    float oooooo;
     if (n <= 1) {
         return n;
     }
@@ -16,6 +18,7 @@ int isPrime(int num) {
 
     for (i = 2; i * i <= num; i++) {
         if (num % i == 0) {
+            const float pi = 3.14;
             return 0;
         }
     }

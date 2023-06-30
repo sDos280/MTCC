@@ -64,27 +64,27 @@ class NoneNode:
 
 
 class CStruct:
-    def __init__(self, name: CIdentifier, members: list[list[CDeclarator]]):
-        self.name: CIdentifier = name
+    def __init__(self, identifier: CIdentifier, members: list[list[CDeclarator]]):
+        self.identifier: CIdentifier = identifier
         self.members: list[list[CDeclarator]] = members
 
     def to_dict(self):
         return {
             "node": "CStruct",
-            "identifier": self.name.to_dict(),
+            "identifier": self.identifier.to_dict(),
             "members": [[member.to_dict() for member in members] for members in self.members]
         }
 
 
 class CUnion:
-    def __init__(self, name: CIdentifier, members: list[list[CDeclarator]]):
-        self.name: CIdentifier = name
+    def __init__(self, identifier: CIdentifier, members: list[list[CDeclarator]]):
+        self.identifier: CIdentifier = identifier
         self.members: list[list[CDeclarator]] = members
 
     def to_dict(self):
         return {
             "node": "CUnion",
-            "identifier": self.name.to_dict(),
+            "identifier": self.identifier.to_dict(),
             "members": [[member.to_dict() for member in members] for members in self.members]
         }
 

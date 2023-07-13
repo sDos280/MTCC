@@ -151,7 +151,7 @@ class CParser:
         for typedef in self.typedefs:
             if typedef.declarator.identifier.token.string == name:
                 return typedef
-        self.fatal_token(self.current_token.index, f"Typedef name '{name}' not found", eh.TypedefNameNotFound)
+        self.fatal_token(self.current_token.index, f"Typedef identifier '{name}' not found", eh.TypedefNameNotFound)
 
     def get_type_name(self) -> CTypedef:
         return self.get_typedef_name(self.current_token.string)
@@ -327,12 +327,12 @@ class CParser:
 
     def peek_type_name(self) -> CTypeName:
         """
-        parse a type name
+        parse a type identifier
         type_name
             : specifier_qualifier_list
             | specifier_qualifier_list abstract_declarator
             ;
-        :return: a type name node
+        :return: a type identifier node
         """
         specified_qualifier, type_attributes = self.peek_specifier_qualifier_list()
 
@@ -418,7 +418,7 @@ class CParser:
 
     def peek_typedef_name(self) -> CTypedef:
         """
-        parse a typedef name
+        parse a typedef identifier
         typedef_name
             : IDENTIFIER
             ;
@@ -1304,7 +1304,7 @@ class CParser:
             self.peek_token()  # peek the closing curly brace token
 
         if identifier.token.string == "" and members == []:
-            raise SyntaxError("An enum name and/or an enumerator list is needed")
+            raise SyntaxError("An enum identifier and/or an enumerator list is needed")
 
         cenum.identifier = identifier
         cenum.members = members
@@ -1416,7 +1416,7 @@ class CParser:
         struct_or_union: CStruct | CUnion = CStruct(CIdentifier(None), []) if is_struct else CUnion(CIdentifier(None), [])
 
         if self.is_token_kind(tk.TokenKind.IDENTIFIER):
-            struct_or_union.name = CIdentifier(self.current_token)
+            struct_or_union.identifier = CIdentifier(self.current_token)
             self.peek_token()  # peek identifier token
 
             if self.is_token_kind(tk.TokenKind.OPENING_CURLY_BRACE):

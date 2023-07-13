@@ -42,7 +42,12 @@ enum Days {
     SUNDAY
 };
 
-typedef struct {
+struct Vector2 {
+	int x;
+	int y;
+};
+
+typedef struct test122{
 	int x;
 	int y;
 } lol, GG;

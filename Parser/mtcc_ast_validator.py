@@ -9,6 +9,12 @@ the validator validate the ast by doing the following:
 from Parser.mtcc_c_ast import *
 from Parser.mtcc_parser import CParser
 import Parser.mtcc_error_handler as eh
+import enum
+
+
+class IdentifierKind(enum.Enum):
+    Member = enum.auto()
+    Regular = enum.auto()
 
 
 class AstValidator:
@@ -16,37 +22,37 @@ class AstValidator:
         self.__parser = parser
         self.typedefs: list[CTypedef] = parser.typedefs
         self.translation_unit: list[CDeclarator] = translation_unit
-        self.declarators_stack = []
+        self.identifiers_stack: list[tuple[CIdentifier, IdentifierKind]] = []
 
-    def look_for_declarator(self, declarator: CDeclarator):
-        for declarators in self.declarators_stack:
-            if declarator in declarators:
-                return declarator
+    def drop_stack_by_amount(self, amount: int):
+        if amount > len(self.identifiers_stack):
+            raise RuntimeError("amount is bigger than the stack size")
+
+        for _ in range(amount):
+            self.identifiers_stack.pop()
+
+    def look_for_identifier(self, identifier: CIdentifier) -> CIdentifier | None:
+        if identifier is None:
+            return None
+
+        for declarator_, kind in self.identifiers_stack:
+            if declarator_.token.string == "" or identifier.token.string == "":
+                continue  # we shouldn't really check for empty identifiers
+
+            if identifier.token.string in declarator_.token.string:
+                return identifier
+
         return None
 
-    def look_for_duplicate_identifiers(self):
-        # first we will look if the typedefs has a duplicate
-        for typedef in self.typedefs:
-            for typedef2 in self.typedefs:
-                if typedef != typedef2 and str(typedef.declarator.identifier) == str(typedef2.declarator.identifier):
-                    raise self.__parser.fatal_token(typedef2.declarator.identifier.token.index, "Duplicate identifier", eh.DuplicateIdentifier)
+    def push_translation_unit_identifiers(self):
+        drop_amount: int = 0
 
-        self.push_translation_unit()
-
-    def push_translation_unit(self):
-        declarators_list = []
         for external_declaration in self.translation_unit:
-            if not isinstance(external_declaration, list):  # external_declaration is list of variable declaration
-                for declaration in external_declaration:
-                    pass
-            else:  # external_declaration is function declaration
-                pass
+            identifier_in_stack: CIdentifier | None = self.look_for_identifier(external_declaration.identifier)
 
-    def push_function_declaration_declarators(self, function_declarator: CFunction):
-        for declaration in function_declarator.compound_statement.declarations:
-            if isinstance(declaration, CFunction):
-                self.push_function_declaration_declarators(declaration)
-            else:
-                self.push_declarator(declaration)
-        self.declarators_stack.append(function_declarator.compound_statement.declarations)
-        self.push_declarator(function_declarator)
+            if identifier_in_stack is not None:
+                raise self.__parser.fatal_token(external_declaration.identifier.token.index, "Duplicate identifier", eh.DuplicateIdentifier)
+
+            self.identifiers_stack.append((external_declaration.identifier, IdentifierKind.Regular))
+
+        self.drop_stack_by_amount(drop_amount)
